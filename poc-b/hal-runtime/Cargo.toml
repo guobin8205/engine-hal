@@ -1,0 +1,18 @@
+[package]
+name = "hal-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Engine-HAL POC-B: Rust runtime that drives Cocos2d-x via cxx bridge"
+
+[dependencies]
+cxx = "1.0"
+glam = "0.33"
+hal-poc = { path = "../../crates/hal-poc" }
+
+# POC-B 只在 Windows + Win32 (i686) 跑
+[target.'cfg(target_arch = "x86")'.dependencies]
+
+[lib]
+# cxx bridge 同时生成 Rust 静态库 + C++ 文件
+crate-type = ["lib"]
