@@ -2,6 +2,10 @@
 /target
 /crates/*/target
 
+# POC-B 构建目录（CMake）
+/poc-b/cocos-demo/build*/
+/poc-b/*/target
+
 # Cargo.lock: 二进制项目保留，库项目可提交。engine-hal 是库（workspace），保留以确保可复现构建。
 
 # IDE

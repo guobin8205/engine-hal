@@ -8,7 +8,7 @@
 // - 内部用 std::unordered_map<u64, cocos2d::Node*> 做注册表
 // - 异常 try/catch 转 0 返回值（POC 简化错误处理）
 
-#include "hal_bridge.h"
+#include "hal_facade.h"
 
 #include "cocos2d.h"
 

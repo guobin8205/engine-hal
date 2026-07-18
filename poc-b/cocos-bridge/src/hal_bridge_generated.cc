@@ -4,6 +4,10 @@
 #include <type_traits>
 #include <utility>
 
+// POC-B patch: 让 generated.cc 看到 facade 函数声明。
+// 正式版应该用 build.rs 在生成时自动加这一行。
+#include "hal_facade.h"
+
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #ifdef __clang__

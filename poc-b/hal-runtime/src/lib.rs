@@ -106,6 +106,44 @@ impl ffi::HalColor {
     }
 }
 
+// ============================================================
+// C 入口（POC-B1 简化版）：让 cocos-demo 直接调 Rust
+// ============================================================
+
+/// POC-B1 演示入口：创建一个 scene + 一个 sprite，run 起来。
+///
+/// cocos-demo 的 AppDelegate::applicationDidFinishLaunching 调这个。
+/// 内部通过 cxx bridge 调 C++ facade。
+///
+/// 注意：这是个 C ABI 函数（extern "C"），不走 cxx bridge。
+/// cxx bridge 用于 Rust → C++ 方向（调 facade）。
+/// C++ → Rust 方向我们用简单 extern "C"（POC 简化）。
+#[no_mangle]
+pub extern "C" fn hal_runtime_run_demo_scene() {
+    use cxx::let_cxx_string;
+
+    // 1. 创建场景
+    let scene = ffi::hal_scene_create();
+    if scene == 0 {
+        return;
+    }
+
+    // 2. 创建一个 sprite（用 Cocos 内置的 HelloWorld.png 占位）
+    //    POC-B1 只验证机制，B2 才真正解析 .tscn
+    let_cxx_string!(texture = "HelloWorld.png");
+    let sprite = ffi::hal_sprite_create(&texture);
+    if sprite != 0 {
+        // 居中显示
+        ffi::hal_node_set_position(sprite, 480.0, 320.0);
+        ffi::hal_node_add_child(scene, sprite);
+        // 注意：不调 hal_node_destroy —— sprite 由 Cocos scene graph 管理
+        // （POC-B1 验证：facade retain 后，Cocos addChild 也会 retain，引用计数正确）
+    }
+
+    // 3. 切换到这个场景
+    ffi::hal_director_run_with_scene(scene);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

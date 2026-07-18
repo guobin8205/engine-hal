@@ -15,4 +15,8 @@ hal-poc = { path = "../../crates/hal-poc" }
 
 [lib]
 # cxx bridge 同时生成 Rust 静态库 + C++ 文件
-crate-type = ["lib"]
+# staticlib 产出 MSVC 可链接的 .lib（含全部 Rust 依赖）
+# cdylib 产出 .dll（备选）
+crate-type = ["staticlib", "rlib"]
+# 改名：默认会是 libhal_runtime.lib，去掉 lib 前缀更整洁
+name = "hal_runtime"
