@@ -18,10 +18,33 @@ use crate::ffi;
 ///
 /// 这是 POC-B2 的端到端入口。
 pub fn build_scene_from_tscn(tscn_path: &str) -> Result<u64, BuildError> {
+    eprintln!("POC-B2 [Rust]: 开始加载 {}", tscn_path);
+
     let content = std::fs::read_to_string(tscn_path)
-        .map_err(|e| BuildError::ReadFile(tscn_path.into(), e.to_string()))?;
-    let scene = parse_scene(&content).map_err(|e| BuildError::Parse(e.to_string()))?;
+        .map_err(|e| {
+            eprintln!("POC-B2 [Rust]: 读取文件失败: {}", e);
+            BuildError::ReadFile(tscn_path.into(), e.to_string())
+        })?;
+
+    eprintln!("POC-B2 [Rust]: 文件读取成功，{} 字节", content.len());
+
+    let scene = parse_scene(&content).map_err(|e| {
+        eprintln!("POC-B2 [Rust]: 解析失败: {}", e);
+        BuildError::Parse(e.to_string())
+    })?;
+
+    eprintln!(
+        "POC-B2 [Rust]: 解析成功 - {} 节点, {} ext_resources, {} sub_resources",
+        scene.nodes.len(),
+        scene.ext_resources.len(),
+        scene.sub_resources.len()
+    );
+
     let scene_handle = build_scene_from_data(&scene);
+    eprintln!(
+        "POC-B2 [Rust]: 场景构建完成，handle = {}，调 Director::runWithScene",
+        scene_handle
+    );
     ffi::hal_director_run_with_scene(scene_handle);
     Ok(scene_handle)
 }
@@ -85,16 +108,32 @@ fn create_node(
     ext_resources: &HashMap<&str, &str>,
 ) -> Option<u64> {
     let node_type = node.r#type.as_deref().unwrap_or("Node");
+    eprintln!(
+        "POC-B2 [Rust]: 创建节点 '{}' (type={})",
+        node.name, node_type
+    );
 
     let handle = match node_type {
         "Sprite" | "Sprite2D" => create_sprite_node(node, ext_resources)?,
         "Label" => create_label_node(node)?,
         // 其他类型（Control/Panel/Node2D 等）POC-B2 暂不映射，跳过
-        _ => return None,
+        other => {
+            eprintln!("POC-B2 [Rust]: 跳过未支持的节点类型 '{}'", other);
+            return None;
+        }
     };
 
     if handle != 0 {
+        eprintln!(
+            "POC-B2 [Rust]: 节点 '{}' 创建成功，handle={}",
+            node.name, handle
+        );
         apply_common_props(handle, node);
+    } else {
+        eprintln!(
+            "POC-B2 [Rust]: 节点 '{}' 创建失败（facade 返回 0）",
+            node.name
+        );
     }
 
     Some(handle)

@@ -128,9 +128,29 @@ void hal_node_set_color(uint64_t handle, HalColor color) {
 // ============ Sprite ============
 
 uint64_t hal_sprite_create(const std::string& texture_path) {
+    // 检查文件是否能被 FileUtils 找到
+    auto fileUtils = cocos2d::FileUtils::getInstance();
+    std::string fullPath = fileUtils->fullPathForFilename(texture_path);
+    if (fullPath.empty() || fullPath == texture_path) {
+        // fullPathForFilename 找不到时返回原始路径，不是真实路径
+        // 用 isFileExist 检查
+        if (!fileUtils->isFileExist(texture_path)) {
+            cocos2d::log("POC-B2 [facade]: hal_sprite_create - 文件不存在: %s", texture_path.c_str());
+            // 打印搜索路径帮助诊断
+            auto searchPaths = fileUtils->getSearchPaths();
+            cocos2d::log("POC-B2 [facade]: 当前搜索路径数 = %zd", searchPaths.size());
+            for (size_t i = 0; i < searchPaths.size() && i < 5; i++) {
+                cocos2d::log("POC-B2 [facade]:   [%zd] %s", i, searchPaths[i].c_str());
+            }
+            return 0;
+        }
+    }
+    cocos2d::log("POC-B2 [facade]: hal_sprite_create('%s') -> fullPath: %s",
+                 texture_path.c_str(), fullPath.c_str());
     cocos2d::Sprite* sprite = cocos2d::Sprite::create(texture_path);
     if (sprite == nullptr) {
-        return 0;  // 纹理加载失败
+        cocos2d::log("POC-B2 [facade]: Sprite::create 返回 nullptr");
+        return 0;
     }
     return register_node(sprite);
 }
