@@ -1,18 +1,22 @@
 //! 场景重建器：调 hal-poc 解析 .tscn，遍历节点调 Cocos facade。
 //!
-//! B1 阶段只提供最小骨架（API 定义 + 占位），
-//! B2 阶段会实现完整的节点遍历和属性映射。
+//! B2 完整版：
+//! - 解析 ExtResource 表（id → path 映射）
+//! - 按节点 type 分发到对应 facade API
+//! - 处理父子关系（parent 字段）
+//! - 应用常见属性（position/visible/color/text）
 
-use hal_poc::{parse_scene, SceneData, SceneNode, Variant};
+use std::collections::HashMap;
 
 use cxx::let_cxx_string;
+
+use hal_poc::{parse_scene, SceneData, SceneNode, Variant};
 
 use crate::ffi;
 
 /// 解析 .tscn 文件并在 Cocos 窗口里显示。
 ///
-/// 这是 POC-B 的端到端入口（B2 实现）。
-/// B1 阶段调用方先用 `create_simple_scene()` 测试 facade 机制。
+/// 这是 POC-B2 的端到端入口。
 pub fn build_scene_from_tscn(tscn_path: &str) -> Result<u64, BuildError> {
     let content = std::fs::read_to_string(tscn_path)
         .map_err(|e| BuildError::ReadFile(tscn_path.into(), e.to_string()))?;
@@ -26,28 +30,28 @@ pub fn build_scene_from_tscn(tscn_path: &str) -> Result<u64, BuildError> {
 pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     let cocos_scene = ffi::hal_scene_create();
 
-    // 先建立 "节点名 → u64 句柄" 的映射，处理父子关系
-    let mut handles: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+    // 1. 构建 ExtResource 查找表：id → path
+    //    Godot 的 ext_resource path 用 res:// 协议，Cocos 需要 relative path
+    let ext_resources: HashMap<&str, &str> = scene
+        .ext_resources
+        .iter()
+        .map(|er| (er.id.as_str(), er.path.as_str()))
+        .collect();
 
-    // 第一遍：创建所有节点
+    // 2. 节点名 → u64 句柄
+    let mut handles: HashMap<String, u64> = HashMap::new();
+
+    // 3. 第一遍：创建所有节点
     for node in &scene.nodes {
-        if let Some(handle) = create_node(node) {
+        if let Some(handle) = create_node(node, &ext_resources) {
             handles.insert(node.name.clone(), handle);
         }
     }
 
-    // 第二遍：根据 parent 字段建立父子关系
+    // 4. 第二遍：根据 parent 字段建立父子关系
     for node in &scene.nodes {
         if let Some(&child_handle) = handles.get(&node.name) {
-            let parent_handle = match &node.parent {
-                None => cocos_scene,
-                Some(s) if s.as_str() == "." || s.is_empty() => cocos_scene,
-                Some(parent_path) => {
-                    // parent 可能是 "Path/To" 多级路径，找最后一个 name
-                    let parent_name = parent_path.rsplit('/').next().unwrap_or(parent_path);
-                    *handles.get(parent_name).unwrap_or(&cocos_scene)
-                }
-            };
+            let parent_handle = resolve_parent(&node.parent, &handles, cocos_scene);
             ffi::hal_node_add_child(parent_handle, child_handle);
         }
     }
@@ -55,31 +59,53 @@ pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     cocos_scene
 }
 
+/// 解析 parent 字段，返回父节点句柄。
+/// Godot parent 格式：
+///   - None 或 "." 或 "" → 场景根
+///   - "PathA" → 同级节点
+///   - "PathA/PathB" → 多级路径，取最后一段作为直接父节点名
+fn resolve_parent(
+    parent: &Option<String>,
+    handles: &HashMap<String, u64>,
+    scene_root: u64,
+) -> u64 {
+    match parent {
+        None => scene_root,
+        Some(s) if s == "." || s.is_empty() => scene_root,
+        Some(parent_path) => {
+            let parent_name = parent_path.rsplit('/').next().unwrap_or(parent_path);
+            *handles.get(parent_name).unwrap_or(&scene_root)
+        }
+    }
+}
+
 /// 根据节点类型创建对应的 Cocos 节点。返回句柄（失败返回 None）。
-fn create_node(node: &SceneNode) -> Option<u64> {
+fn create_node(
+    node: &SceneNode,
+    ext_resources: &HashMap<&str, &str>,
+) -> Option<u64> {
     let node_type = node.r#type.as_deref().unwrap_or("Node");
 
     let handle = match node_type {
-        "Sprite" | "Sprite2D" => create_sprite_node(node)?,
+        "Sprite" | "Sprite2D" => create_sprite_node(node, ext_resources)?,
         "Label" => create_label_node(node)?,
-        _ => {
-            // 其他类型（Control/Panel/Node2D 等）POC-B2 暂不映射，
-            // 退化为普通节点（C++ facade 暂用空 Sprite 占位或返回 0）
-            0
-        }
+        // 其他类型（Control/Panel/Node2D 等）POC-B2 暂不映射，跳过
+        _ => return None,
     };
 
     if handle != 0 {
-        // 应用通用属性
         apply_common_props(handle, node);
     }
 
     Some(handle)
 }
 
-fn create_sprite_node(node: &SceneNode) -> Option<u64> {
+fn create_sprite_node(
+    node: &SceneNode,
+    ext_resources: &HashMap<&str, &str>,
+) -> Option<u64> {
     // 从 props 找 texture = ExtResource("id")
-    let texture_path = node.props.iter().find_map(|(k, v)| {
+    let texture_ext_id = node.props.iter().find_map(|(k, v)| {
         if k == "texture" {
             match v {
                 Variant::ExtResource(id) => Some(id.clone()),
@@ -90,8 +116,17 @@ fn create_sprite_node(node: &SceneNode) -> Option<u64> {
         }
     })?;
 
-    // POC-B2 简化：texture 路径直接用 ExtResource id 占位（实际应查 ExtResource 表）
-    let_cxx_string!(c_path = texture_path);
+    // 查 ExtResource 表，把 id 转成实际路径
+    let texture_path = ext_resources.get(texture_ext_id.as_str()).copied()?;
+
+    // 把 res:// 协议路径转成 Cocos 的相对路径
+    // Godot: res://path/to/file.png
+    // Cocos: path/to/file.png（相对 Resources 目录）
+    let cocos_path = texture_path
+        .strip_prefix("res://")
+        .unwrap_or(texture_path);
+
+    let_cxx_string!(c_path = cocos_path);
     Some(ffi::hal_sprite_create(&c_path))
 }
 
@@ -106,27 +141,29 @@ fn create_label_node(node: &SceneNode) -> Option<u64> {
         })
         .unwrap_or_default();
 
+    // POC-B2 简化：字体用 Cocos 内置的 Arial 系统字体
+    // 实际应该从 props 的 font/theme 读 TTF 路径
     let_cxx_string!(c_text = text);
-    let_cxx_string!(c_font = "Arial"); // POC 简化：硬编码字体
+    let_cxx_string!(c_font = "Arial");
     Some(ffi::hal_label_create(&c_text, &c_font, 24.0))
 }
 
 fn apply_common_props(handle: u64, node: &SceneNode) {
-    // position
+    // position: Vector2(x, y)
     if let Some(Variant::Vector2(v)) =
         node.props.iter().find(|(k, _)| k == "position").map(|(_, v)| v)
     {
         ffi::hal_node_set_position(handle, v.x, v.y);
     }
 
-    // visible
+    // visible: bool
     if let Some(Variant::Bool(b)) =
         node.props.iter().find(|(k, _)| k == "visible").map(|(_, v)| v)
     {
         ffi::hal_node_set_visible(handle, *b);
     }
 
-    // modulate (color)
+    // modulate: Color(r, g, b, a)
     if let Some(Variant::Color(c)) =
         node.props.iter().find(|(k, _)| k == "modulate").map(|(_, v)| v)
     {
@@ -160,5 +197,31 @@ mod tests {
     fn build_error_display() {
         let e = BuildError::Parse("syntax error".into());
         assert!(format!("{}", e).contains("syntax error"));
+    }
+
+    #[test]
+    fn resolve_parent_root() {
+        let handles = HashMap::new();
+        assert_eq!(resolve_parent(&None, &handles, 999), 999);
+        assert_eq!(resolve_parent(&Some(".".into()), &handles, 999), 999);
+        assert_eq!(resolve_parent(&Some("".into()), &handles, 999), 999);
+    }
+
+    #[test]
+    fn resolve_parent_named() {
+        let mut handles = HashMap::new();
+        handles.insert("Parent".into(), 42u64);
+        assert_eq!(resolve_parent(&Some("Parent".into()), &handles, 999), 42);
+    }
+
+    #[test]
+    fn resolve_parent_multilevel() {
+        let mut handles = HashMap::new();
+        handles.insert("Direct".into(), 77u64);
+        // "PathA/Direct" 应该解析到 "Direct"
+        assert_eq!(
+            resolve_parent(&Some("PathA/Direct".into()), &handles, 999),
+            77
+        );
     }
 }

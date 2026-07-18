@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3 uid="uid://bpocb2test0001"]
+
+[ext_resource type="Texture2D" path="res://HelloWorld.png" id="1_hero"]
+
+[node name="Root" type="Node2D"]
+
+[node name="Hero" type="Sprite2D" parent="."]
+texture = ExtResource("1_hero")
+position = Vector2(480, 320)
+scale = Vector2(1, 1)
+
+[node name="Greeting" type="Label" parent="."]
+offset_left = 200.0
+offset_top = 100.0
+offset_right = 760.0
+offset_bottom = 200.0
+text = "Engine-HAL POC-B2: From Godot .tscn"
+position = Vector2(240, 150)

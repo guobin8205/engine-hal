@@ -10,14 +10,18 @@
 #include "AppDelegate.h"
 #include "cocos2d.h"
 
+#include <cstddef>
+#include <string>
+#include <cstring>
+
 USING_NS_CC;
 
-// Rust hal-runtime 的 C++ 桥接声明（cxx bridge 自动生成的）
-// 实际符号在 libhal_runtime.a 里
+// Rust hal-runtime 的 C++ 桥接声明
 extern "C" {
-    // hal-runtime 的 scene_builder 暴露的入口
-    // （POC-B1 简化：先用 C 接口，B2 改用 cxx bridge）
+    // POC-B1: 最小演示（硬编码 sprite）
     void hal_runtime_run_demo_scene();
+    // POC-B2: 端到端（从 .tscn 构建）
+    unsigned long long hal_runtime_run_tscn_scene(const char* path, size_t len);
 }
 
 static cocos2d::Size designResolutionSize = cocos2d::Size(960, 640);
@@ -48,9 +52,15 @@ bool AppDelegate::applicationDidFinishLaunching() {
         designResolutionSize.height,
         ResolutionPolicy::NO_BORDER);
 
-    // POC-B1: 调 Rust hal-runtime 创建演示场景
-    // Rust 内部会调 C++ facade (hal_scene_create, hal_sprite_create, etc.)
-    hal_runtime_run_demo_scene();
+    // POC-B2: 从 test_scene.tscn 构建端到端场景
+    // .tscn 由 hal-poc (POC-A) 解析，scene_builder 遍历节点调 C++ facade
+    const char* tscn_path = "test_scene.tscn";
+    unsigned long long result = hal_runtime_run_tscn_scene(
+        tscn_path, std::char_traits<char>::length(tscn_path));
+    if (result == 0) {
+        // fallback 到 B1 demo 场景
+        hal_runtime_run_demo_scene();
+    }
 
     return true;
 }
