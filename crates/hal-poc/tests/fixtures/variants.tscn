@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://bvariants00001"]
+
+[node name="Root" type="Node"]
+
+[node name="Variants" type="Node" parent="."]
+# 标量
+intval = 42
+negval = -7
+floatval = 3.14
+expval = 1e3
+negfloat = -0.5
+boolval = true
+falseval = false
+nullval = null
+# 字符串
+plain = "hello"
+escaped = "line1\nline2\ttab\\slash\"quote"
+unicode = "中文 emoji 🎮"
+chinese = "三国杀"
+# 几何类型
+pos2d = Vector2(100, 200)
+pos2di = Vector2i(10, 20)
+pos3d = Vector3(1, 2, 3)
+rect = Rect2(0, 0, 100, 100)
+color = Color(0.5, 0.5, 0.5, 0.8)
+color_rgb = Color(1, 0, 0)
+# 路径与引用
+nodepath = NodePath("UI/Panel")
+strname = &"method_name"
+barepath = "."
+# 数组与字典
+arr = [1, 2, 3]
+empty_arr = []
+nested_arr = [[1, 2], [3, 4]]
+dict = { "hp": 100, "mp": 50, "name": "Hero" }
+empty_dict = {}
+packed_floats = PackedFloat32Array(0, 0.5, 1)
+packed_ints = PackedInt32Array(0, 1, 2, 3)

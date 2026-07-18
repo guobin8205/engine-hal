@@ -1,0 +1,19 @@
+# Rust 构建产物
+/target
+/crates/*/target
+
+# Cargo.lock: 二进制项目保留，库项目可提交。engine-hal 是库（workspace），保留以确保可复现构建。
+
+# IDE
+/.vscode
+/.idea
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~

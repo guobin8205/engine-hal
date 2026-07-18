@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3 uid="uid://buipanel0000001"]
+
+[ext_resource type="Script" path="res://main_menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://bg.png" id="2_bg"]
+
+[sub_resource type="StyleBoxFlat" id="panel_normal"]
+bg_color = Color(0.15, 0.15, 0.2, 0.95)
+border_width_left = 2
+border_width_right = 2
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Background" type="TextureRect" parent="."]
+texture = ExtResource("2_bg")
+
+[node name="Panel" type="Panel" parent="."]
+custom_minimum_size = Vector2(400, 300)
+theme_override_styles/panel = SubResource("panel_normal")
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 380.0
+offset_bottom = 280.0
+
+[node name="StartButton" type="Button" parent="Panel/VBox"]
+text = "Start Game"
+
+[node name="QuitButton" type="Button" parent="Panel/VBox"]
+text = "Quit"

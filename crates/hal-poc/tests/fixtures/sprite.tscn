@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://bspritedemo00001"]
+
+[ext_resource type="Texture2D" path="res://icon.svg" id="1_abcde"]
+[ext_resource type="Script" path="res://hero.gd" id="2_fghij"]
+
+[node name="Root" type="Node2D"]
+
+[node name="Hero" type="Sprite2D" parent="."]
+texture = ExtResource("1_abcde")
+position = Vector2(240, 450)
+scale = Vector2(2, 2)
+
+[node name="Label" type="Label" parent="."]
+offset_left = 100.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 80.0
+text = "Hello, Godot"
+modulate = Color(1, 0.8, 0.2, 1)
+
+[connection signal="pressed" from="Hero" to="." method="_on_hero_pressed"]
