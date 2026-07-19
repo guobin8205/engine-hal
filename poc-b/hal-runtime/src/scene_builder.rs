@@ -64,13 +64,15 @@ pub fn build_scene_from_tscn(tscn_path: &str) -> Result<u64, BuildError> {
 pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     let cocos_scene = ffi::hal_scene_create();
 
-    // 0. 用 hal-layout 算布局（Phase 1 新增）
+    // 0. 用 hal-layout 算布局
     let window_size = Size::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     let layout_tree = build_layout_tree(scene, window_size);
-    let mut layout_map: HashMap<String, (f32, f32)> = HashMap::new();
+    let mut layout_positions: HashMap<String, (f32, f32)> = HashMap::new();
+    let mut layout_sizes: HashMap<String, (f32, f32)> = HashMap::new();
     if let Some(ref tree) = layout_tree {
         for flat in tree.flatten() {
-            layout_map.insert(flat.name.clone(), flat.position);
+            layout_positions.insert(flat.name.clone(), flat.position);
+            layout_sizes.insert(flat.name.clone(), (flat.size.width, flat.size.height));
         }
     }
 
@@ -86,7 +88,7 @@ pub fn build_scene_from_data(scene: &SceneData) -> u64 {
 
     // 3. 创建所有节点
     for node in &scene.nodes {
-        if let Some(handle) = create_node(node, &ext_resources, &layout_map) {
+        if let Some(handle) = create_node(node, &ext_resources, &layout_positions, &layout_sizes) {
             handles.insert(node.name.clone(), handle);
         }
     }
@@ -127,20 +129,58 @@ fn create_node(
     node: &SceneNode,
     ext_resources: &HashMap<&str, &str>,
     layout_map: &HashMap<String, (f32, f32)>,
+    layout_sizes: &HashMap<String, (f32, f32)>,
 ) -> Option<u64> {
     let node_type = node.r#type.as_deref().unwrap_or("Node");
 
     let handle = match node_type {
         "Sprite" | "Sprite2D" => create_sprite_node(node, ext_resources)?,
         "Label" => create_label_node(node)?,
-        // Phase 1 阶段其他 UI 类型暂不支持渲染，但布局已计算
-        _ => return None,
+        // 所有 Control 类型的节点都用 ColorRect 可视化布局
+        _ => create_control_placeholder(node, layout_sizes)?,
     };
 
     if handle != 0 {
         apply_common_props(handle, node, layout_map);
     }
 
+    Some(handle)
+}
+
+/// 为 Control 类型节点创建彩色矩形占位（可视化布局结果）。
+/// 不同类型用不同颜色区分：
+///   - Container（HBox/VBox/Margin/Panel/Split/Tab）→ 半透明蓝
+///   - Label/RichTextLabel → 半透明绿
+///   - Button/CheckBox → 半透明橙
+///   - 其他 Control → 半透明灰
+fn create_control_placeholder(
+    node: &SceneNode,
+    layout_sizes: &HashMap<String, (f32, f32)>,
+) -> Option<u64> {
+    let &(w, h) = layout_sizes.get(&node.name)?;
+    if w < 1.0 || h < 1.0 {
+        return None; // 太小的节点不显示
+    }
+
+    let ty = node.r#type.as_deref().unwrap_or("");
+    let color = match ty {
+        "VBoxContainer" | "HBoxContainer" | "MarginContainer" | "PanelContainer"
+        | "HSplitContainer" | "VSplitContainer" | "TabContainer" | "FoldableContainer"
+        | "CenterContainer" => ffi::HalColor::new(0.2, 0.4, 0.8, 0.3), // 半透明蓝
+        "Label" | "RichTextLabel" => ffi::HalColor::new(0.2, 0.8, 0.3, 0.3), // 半透明绿
+        "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton"
+        | "SpinBox" | "LineEdit" | "TextEdit" | "CodeEdit" => ffi::HalColor::new(0.8, 0.5, 0.2, 0.3), // 半透明橙
+        "ColorRect" | "TextureRect" | "TextureProgressBar" => ffi::HalColor::new(0.5, 0.5, 0.5, 0.5), // 半透明灰
+        _ => ffi::HalColor::new(0.3, 0.3, 0.3, 0.15), // 极淡灰（Control 基类等）
+    };
+
+    let handle = ffi::hal_color_rect_create(w, h, color);
+    if handle == 0 {
+        return None;
+    }
+
+    // 设置锚点为左下角（LayerColor 默认就是，但 Godot 坐标用左上角）
+    // LayerColor 的 position 是左下角位置
     Some(handle)
 }
 

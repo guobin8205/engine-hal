@@ -98,6 +98,11 @@ void cxxbridge1$197$hal_node_set_color(::std::uint64_t handle, ::HalColor *color
   return hal_label_create$(text, font_path, size);
 }
 
+::std::uint64_t cxxbridge1$197$hal_color_rect_create(float width, float height, ::HalColor *color) noexcept {
+  ::std::uint64_t (*hal_color_rect_create$)(float, float, ::HalColor) = ::hal_color_rect_create;
+  return hal_color_rect_create$(width, height, ::std::move(*color));
+}
+
 ::std::size_t cxxbridge1$197$hal_node_registry_count() noexcept {
   ::std::size_t (*hal_node_registry_count$)() = ::hal_node_registry_count;
   return hal_node_registry_count$();

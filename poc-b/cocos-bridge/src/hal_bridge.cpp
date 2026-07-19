@@ -179,6 +179,22 @@ uint64_t hal_label_create(const std::string& text, const std::string& font_path,
     return register_node(label);
 }
 
+uint64_t hal_color_rect_create(float width, float height, HalColor color) {
+    // 用 LayerColor 做纯色矩形（Cocos 没有 ColorRect，LayerColor 是最接近的）
+    cocos2d::LayerColor* rect = cocos2d::LayerColor::create(
+        cocos2d::Color4B(
+            (GLubyte)(color.r * 255.0f),
+            (GLubyte)(color.g * 255.0f),
+            (GLubyte)(color.b * 255.0f),
+            (GLubyte)(color.a * 255.0f)),
+        (GLsizei)width, (GLsizei)height);
+    if (rect == nullptr) {
+        return 0;
+    }
+    // LayerColor 的 anchor point 默认是 (0, 0)，即左下角
+    return register_node(rect);
+}
+
 // ============ 调试 ============
 
 size_t hal_node_registry_count() {

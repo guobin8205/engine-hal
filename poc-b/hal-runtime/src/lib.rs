@@ -75,6 +75,10 @@ pub mod ffi {
         /// 创建 Label。font_path 是 TTF 路径，size 是字号。
         fn hal_label_create(text: &CxxString, font_path: &CxxString, size: f32) -> u64;
 
+        // ============ ColorRect ============
+        /// 创建纯色矩形（用 LayerColor，用于可视化 Control 布局）。
+        fn hal_color_rect_create(width: f32, height: f32, color: HalColor) -> u64;
+
         // ============ 调试 ============
         /// 返回当前注册的节点数（POC-B1 验证无泄漏用）。
         fn hal_node_registry_count() -> usize;

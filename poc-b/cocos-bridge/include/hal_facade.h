@@ -28,6 +28,7 @@ void hal_node_set_color(std::uint64_t handle, HalColor color);
 // ============ Sprite / Label ============
 std::uint64_t hal_sprite_create(const std::string& texture_path);
 std::uint64_t hal_label_create(const std::string& text, const std::string& font_path, float size);
+std::uint64_t hal_color_rect_create(float width, float height, HalColor color);
 
 // ============ 调试 ============
 std::size_t hal_node_registry_count();
