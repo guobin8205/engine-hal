@@ -27,7 +27,7 @@ struct GoldenNode {
     min_height: f64,
 }
 
-const TOLERANCE: f64 = 10.0; // grow_direction 未实现，允许 8px 偏移
+const TOLERANCE: f64 = 5.0;
 
 /// 递归注入 Godot 提供的真实 min_size 到 LayoutNode 树。
 /// 这样能验证布局算法的正确性（排除 min_size 估算误差的影响）。
@@ -57,6 +57,12 @@ fn inject_godot_min_sizes(
                 g.min_width as f32,
                 g.min_height as f32,
             );
+        }
+        if node.name == "BasicControls" {
+            eprintln!("INJECT HIT: '{}' key='{}' min=({},{}) BEFORE SET min_size=({:.0},{:.0})",
+                node.name, golden_key, g.min_width, g.min_height, node.min_size.width, node.min_size.height);
+            node.min_size = hal_layout::layout_tree::Size::new(g.min_width as f32, g.min_height as f32);
+            eprintln!("INJECT HIT: '{}' AFTER SET min_size=({:.0},{:.0})", node.name, node.min_size.width, node.min_size.height);
         }
     } else if node.name == "BasicControls" {
         eprintln!("INJECT MISS: '{}' golden_key='{}'", node.name, golden_key);
@@ -96,31 +102,43 @@ fn control_gallery_matches_godot() {
         eprintln!("GOLDEN CHECK: BasicControls min_width={} min_height={}", g.min_width, g.min_height);
     }
 
-    // 诊断：遍历树打印 BasicControls 子树
-    fn dump_subtree(node: &hal_layout::layout_tree::LayoutNode, depth: usize, max_depth: usize) {
-        if depth > max_depth { return; }
-        eprintln!("{}{}: pos=({:.0},{:.0}) size=({:.0},{:.0})",
-            "  ".repeat(depth), node.name,
-            node.computed.position.0, node.computed.position.1,
-            node.computed.size.width, node.computed.size.height);
+    // 诊断：打印关键节点的 min_size
+    fn find_all(node: &hal_layout::layout_tree::LayoutNode, name: &str, out: &mut Vec<(String, hal_layout::layout_tree::Size)>) {
+        if node.name == name {
+            out.push((node.name.clone(), node.min_size));
+        }
         for c in &node.children {
-            dump_subtree(c, depth + 1, max_depth);
+            find_all(c, name, out);
         }
     }
-    fn find_node2<'a>(node: &'a hal_layout::layout_tree::LayoutNode, name: &str) -> Option<&'a hal_layout::layout_tree::LayoutNode> {
-        if node.name == name { return Some(node); }
-        node.children.iter().find_map(|c| find_node2(c, name))
+    let mut bc_list = Vec::new();
+    find_all(&tree, "BasicControls", &mut bc_list);
+    eprintln!("TREE: BasicControls count = {}", bc_list.len());
+    for (i, (n, ms)) in bc_list.iter().enumerate() {
+        eprintln!("AFTER LAYOUT [{}]: {} min_size=({:.0},{:.0})", i, n, ms.width, ms.height);
     }
-    if let Some(bc) = find_node2(&tree, "BasicControls") {
-        eprintln!("=== BasicControls subtree ===");
-        dump_subtree(bc, 0, 3);
+
+    // 打印 tree 结构前3层
+    fn dump_tree(node: &hal_layout::layout_tree::LayoutNode, depth: usize) {
+        if depth > 3 { return; }
+        eprintln!("{}{} (children={})", "  ".repeat(depth), node.name, node.children.len());
+        for c in &node.children { dump_tree(c, depth + 1); }
     }
+    dump_tree(&tree, 0);
     // （正式版应该由 hal-layout 自己精确计算 min_size，这里用 golden 验证布局算法的正确性）
     let root_name = tree.name.clone();
     inject_godot_min_sizes(&mut tree, &golden, "", &root_name);
 
-    // 重新布局（用正确的 min_size）
+    // 诊断：layout 前 min_size
+    let mut before = Vec::new();
+    find_all(&tree, "BasicControls", &mut before);
+    eprintln!("BEFORE LAYOUT: BasicControls min_size=({:.0},{:.0})", before[0].1.width, before[0].1.height);
+
     tree.layout(window_size);
+
+    let mut after = Vec::new();
+    find_all(&tree, "BasicControls", &mut after);
+    eprintln!("AFTER LAYOUT: BasicControls min_size=({:.0},{:.0})", after[0].1.width, after[0].1.height);
 
     // 直接遍历 LayoutNode 树，对比 computed.position（相对父节点）和 golden 的 get_rect
     let mut match_count = 0;
