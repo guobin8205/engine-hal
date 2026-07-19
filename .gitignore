@@ -6,6 +6,10 @@
 /poc-b/cocos-demo/build*/
 /poc-b/*/target
 
+# Godot 项目缓存
+**/.godot/
+**/*.uid
+
 # Cargo.lock: 二进制项目保留，库项目可提交。engine-hal 是库（workspace），保留以确保可复现构建。
 
 # IDE
