@@ -121,6 +121,12 @@ pub enum ContainerType {
     /// Margin{panel_left, title_height+panel_top, panel_right, panel_bottom}。
     /// title_position=0(top) 标题在顶部，=1(bottom) 标题在底部（影响 y 偏移方向）。
     Foldable { folded: bool, title_height: f32, title_position: i32, panel_left: f32, panel_top: f32, panel_right: f32, panel_bottom: f32 },
+    /// AspectRatioContainer：按宽高比缩放单个子节点，居中对齐。
+    AspectRatio { ratio: f32, stretch_mode: i32, align_h: i32, align_v: i32 },
+    /// GridContainer：网格布局（columns 列，子节点按行优先填充）。
+    /// 简化版：无 EXPAND 列/行时，列宽/行高 = max(该列/行子节点 min_size)。
+    /// EXPAND 列瓜分剩余空间的迭代算法未实现（drag_and_drop 等场景不需要）。
+    Grid { columns: i32, h_separation: f32, v_separation: f32 },
 }
 
 /// 节点的计算结果（Godot 坐标系：左上角原点，Y 向下）。
@@ -372,6 +378,116 @@ impl LayoutNode {
                     child.layout_children();
                 }
             }
+            ContainerType::AspectRatio { ratio, stretch_mode, align_h, align_v } => {
+                // 移植 Godot aspect_ratio_container.cpp::NOTIFICATION_SORT_CHILDREN
+                // child_base = (ratio, 1.0)，按 stretch_mode 算 scale
+                if let Some(child) = self.children.first_mut() {
+                    let child_min = child.combined_min_size();
+                    let scale = match stretch_mode {
+                        0 => my_size.width / ratio,                        // WIDTH_CONTROLS_HEIGHT
+                        1 => my_size.height / 1.0,                          // HEIGHT_CONTROLS_WIDTH
+                        2 => (my_size.width / ratio).min(my_size.height),  // FIT
+                        3 => (my_size.width / ratio).max(my_size.height),  // COVER
+                        _ => my_size.width.min(my_size.height),
+                    };
+                    let mut child_size = Size::new(ratio * scale, 1.0 * scale);
+                    // 不小于子节点 min_size
+                    child_size = Size::new(
+                        child_size.width.max(child_min.width),
+                        child_size.height.max(child_min.height),
+                    );
+                    // 对齐
+                    let ax = match align_h { 0 => 0.0, 2 => 1.0, _ => 0.5 };
+                    let ay = match align_v { 0 => 0.0, 2 => 1.0, _ => 0.5 };
+                    let offset_x = (my_size.width - child_size.width) * ax;
+                    let offset_y = (my_size.height - child_size.height) * ay;
+                    child.computed.position = (offset_x, offset_y);
+                    child.computed.size = child_size;
+                    child.layout_children();
+                }
+            }
+            ContainerType::Grid { columns, h_separation, v_separation } => {
+                // 简化版 GridContainer（移植 grid_container.cpp，不含 EXPAND 列迭代分配）：
+                // 子节点按行优先填充（row = idx / columns, col = idx % columns）
+                // 列宽 = max(该列子节点 min_width)，行高 = max(该行子节点 min_height)
+                let cols = (columns as usize).max(1);
+                let n = self.children.len();
+                if n == 0 { return; }
+
+                // 算每列最大宽度、每行最大高度
+                let mut col_widths = vec![0.0f32; cols];
+                let rows = (n + cols - 1) / cols;
+                let mut row_heights = vec![0.0f32; rows];
+                for (i, child) in self.children.iter().enumerate() {
+                    let row = i / cols;
+                    let col = i % cols;
+                    let cms = child.combined_min_size();
+                    col_widths[col] = col_widths[col].max(cms.width);
+                    row_heights[row] = row_heights[row].max(cms.height);
+                }
+
+                // 检查是否有 EXPAND 列（如有，简化处理：均分剩余空间）
+                let col_fixed_total: f32 = col_widths.iter().sum();
+                let col_sep_total = h_separation * (cols - 1).max(0) as f32;
+                let col_remain = (my_size.width - col_fixed_total - col_sep_total).max(0.0);
+                let expand_cols: Vec<usize> = (0..cols).filter(|&c| {
+                    self.children.iter().enumerate()
+                        .filter(|(i, _)| *i % cols == c)
+                        .any(|(_, ch)| ch.size_flags_horizontal.is_expand())
+                }).collect();
+                let final_col_widths: Vec<f32> = if !expand_cols.is_empty() {
+                    let extra = col_remain / expand_cols.len() as f32;
+                    col_widths.iter().enumerate().map(|(c, &w)| {
+                        if expand_cols.contains(&c) { w + extra } else { w }
+                    }).collect()
+                } else {
+                    col_widths.clone()
+                };
+
+                // 行的 EXPAND 处理（同列的逻辑）
+                let row_fixed_total: f32 = row_heights.iter().sum();
+                let row_sep_total = v_separation * (rows - 1).max(0) as f32;
+                let row_remain = (my_size.height - row_fixed_total - row_sep_total).max(0.0);
+                let expand_rows: Vec<usize> = (0..rows).filter(|&r| {
+                    self.children.iter().enumerate()
+                        .filter(|(i, _)| *i / cols == r)
+                        .any(|(_, ch)| ch.size_flags_vertical.is_expand())
+                }).collect();
+                let final_row_heights: Vec<f32> = if !expand_rows.is_empty() {
+                    let extra = row_remain / expand_rows.len() as f32;
+                    row_heights.iter().enumerate().map(|(r, &h)| {
+                        if expand_rows.contains(&r) { h + extra } else { h }
+                    }).collect()
+                } else {
+                    row_heights.clone()
+                };
+
+                // 排列：每个子节点在其格子（列宽×行高）内按 size_flags 对齐
+                // （对齐 Godot fit_child_in_rect：FILL 填满，SHRINK_* 用 min_size 居中/靠边）
+                let mut x_offsets = vec![0.0f32; cols];
+                for c in 1..cols {
+                    x_offsets[c] = x_offsets[c-1] + final_col_widths[c-1] + h_separation;
+                }
+                let mut y_offset = 0.0f32;
+                let mut current_row = 0;
+                for (i, child) in self.children.iter_mut().enumerate() {
+                    let row = i / cols;
+                    let col = i % cols;
+                    if row != current_row {
+                        y_offset += final_row_heights[current_row] + v_separation;
+                        current_row = row;
+                    }
+                    let cell_w = final_col_widths[col];
+                    let cell_h = final_row_heights[row];
+                    let child_min = child.combined_min_size();
+                    // 水平：FILL 填满列宽；否则 min_size + SHRINK 对齐
+                    let (cx, cw) = cross_axis_align(cell_w, child_min.width, child.size_flags_horizontal);
+                    let (cy, ch) = cross_axis_align(cell_h, child_min.height, child.size_flags_vertical);
+                    child.computed.position = (x_offsets[col] + cx, y_offset + cy);
+                    child.computed.size = Size::new(cw, ch);
+                    child.layout_children();
+                }
+            }
             ContainerType::HBox { separation } => {
                 let n = self.children.len();
                 if n == 0 {
@@ -595,6 +711,33 @@ impl LayoutNode {
                     } else {
                         Size::new(panel_left + panel_right, title_height + panel_top + panel_bottom)
                     }
+                }
+                ContainerType::AspectRatio { .. } => {
+                    // AspectRatioContainer min_size = 子节点 min_size（不强制宽高比）
+                    if let Some(c) = self.children.first() {
+                        c.combined_min_size()
+                    } else {
+                        Size::ZERO
+                    }
+                }
+                ContainerType::Grid { columns, h_separation, v_separation } => {
+                    // min_size = sum(列宽) + sum(行高)，列宽/行高 = max(子 min)
+                    let cols = (columns as usize).max(1);
+                    let n = self.children.len();
+                    if n == 0 { return Size::ZERO; }
+                    let rows = (n + cols - 1) / cols;
+                    let mut col_widths = vec![0.0f32; cols];
+                    let mut row_heights = vec![0.0f32; rows];
+                    for (i, child) in self.children.iter().enumerate() {
+                        let row = i / cols;
+                        let col = i % cols;
+                        let cms = child.combined_min_size();
+                        col_widths[col] = col_widths[col].max(cms.width);
+                        row_heights[row] = row_heights[row].max(cms.height);
+                    }
+                    let w: f32 = col_widths.iter().sum::<f32>() + h_separation * (cols - 1).max(0) as f32;
+                    let h: f32 = row_heights.iter().sum::<f32>() + v_separation * (rows - 1).max(0) as f32;
+                    Size::new(w, h)
                 }
             }
         } else {

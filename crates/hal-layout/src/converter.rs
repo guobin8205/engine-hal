@@ -250,12 +250,12 @@ fn extract_anchors_offsets(node: &SceneNode) -> (AnchorsPreset, Offsets) {
     (anchors, offsets)
 }
 
-/// SplitContainer 默认 separation（对齐 Godot 默认主题 grabber icon 宽度）。
+/// SplitContainer separation 下限：对齐 Godot `_get_separation()` 的 grabber icon 下限。
 ///
-/// Godot 的 `_get_separation()` 在 `touch_dragger_enabled=false`（默认）时返回
-/// `MAX(theme_separation, grabber_icon_width)`。默认主题 grabber icon 宽 8px，
-/// 所以即使 .tscn 写 `separation=0`，真实分割间距仍是 8。
-const DEFAULT_SPLIT_SEPARATION: f32 = 8.0;
+/// Godot 的 _get_separation = MAX(theme_separation, grabber_icon_width)。
+/// 默认主题 grabber icon 宽 8px，即使 .tscn 写 separation=0，运行时间距仍是 8。
+/// grabber icon 在 headless（有资源）和正常环境都能加载，所以统一用 8 下限。
+const SPLIT_GRABBER_WIDTH: f32 = 8.0;
 
 /// 从节点类型推断容器类型。
 fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerType> {
@@ -279,12 +279,15 @@ fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerTyp
             Some(ContainerType::Margin { left, top, right, bottom })
         }
         // HSplitContainer: split_offset 是相对 default_dragger_position 的偏移
-        // separation 用 max(theme_sep, grabber_width=8) 对齐 Godot _get_separation
+        // separation 直接用 .tscn 的 theme_override 值。
+        // 注意：Godot 运行时的 _get_separation = max(theme_sep, grabber_icon_width)，
+        // 但 grabber icon 在 headless/无 GL 环境加载失败 → sep = theme_sep。
+        // hal-layout 对齐 headless 行为（golden 测试 + Cocos 运行时都无 grabber icon）。
         "HSplitContainer" => {
             let split = get_f32(node, "split_offset")
                 .or_else(|| get_int(node, "split_offset").map(|i| i as f32))
                 .unwrap_or(0.0);
-            let sep = separation.max(DEFAULT_SPLIT_SEPARATION);
+            let sep = separation.max(SPLIT_GRABBER_WIDTH);
             Some(ContainerType::HSplit { separation: sep, split_offset: split })
         }
         // VSplitContainer: 同 HSplit，轴向垂直
@@ -292,7 +295,7 @@ fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerTyp
             let split = get_f32(node, "split_offset")
                 .or_else(|| get_int(node, "split_offset").map(|i| i as f32))
                 .unwrap_or(0.0);
-            let sep = separation.max(DEFAULT_SPLIT_SEPARATION);
+            let sep = separation.max(SPLIT_GRABBER_WIDTH);
             Some(ContainerType::VSplit { separation: sep, split_offset: split })
         }
         // TabContainer: 只渲染当前 tab（current_tab），顶部留 tab_bar_height。
@@ -319,15 +322,36 @@ fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerTyp
                 _ => None,
             }).unwrap_or(false);
             let title_position = get_int(node, "title_position").unwrap_or(0) as i32;
+            // title_height = title_style_min(8) + max(text_line_h, icon_h=16)
+            // panel margins 来自 panel StyleBoxFlat（默认主题 margin 4 四边）
+            let title_text = get_string_prop(node, "title").unwrap_or_default();
+            let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
+            let text_h = hal_font::line_height(font_size) * title_text.split('\n').count().max(1) as f32;
+            let title_height = 8.0 + text_h.max(16.0); // 8 = style top+bottom margin, 16 = fold icon
             Some(ContainerType::Foldable {
                 folded,
-                title_height: 31.0,
+                title_height,
                 title_position,
                 panel_left: 4.0,
-                panel_top: 0.0,
+                panel_top: 4.0,
                 panel_right: 4.0,
                 panel_bottom: 4.0,
             })
+        }
+        // AspectRatioContainer: 按宽高比缩放单个子节点，居中对齐
+        "AspectRatioContainer" => {
+            let ratio = get_f32(node, "ratio").unwrap_or(1.0);
+            let stretch_mode = get_int(node, "stretch_mode").unwrap_or(2) as i32;
+            let align_h = get_int(node, "alignment_horizontal").unwrap_or(1) as i32;
+            let align_v = get_int(node, "alignment_vertical").unwrap_or(1) as i32;
+            Some(ContainerType::AspectRatio { ratio, stretch_mode, align_h, align_v })
+        }
+        // GridContainer: 网格布局，columns 列，子节点按行优先填充
+        "GridContainer" => {
+            let columns = get_int(node, "columns").unwrap_or(1) as i32;
+            let h_sep = get_f32(node, "theme_override_constants/h_separation").unwrap_or(4.0);
+            let v_sep = get_f32(node, "theme_override_constants/v_separation").unwrap_or(4.0);
+            Some(ContainerType::Grid { columns, h_separation: h_sep, v_separation: v_sep })
         }
         // GraphFrame: GraphElement 子类（Container），布局 = titlebar + 单一内容区。
         // 移植自 Godot graph_frame.cpp::_resort：
@@ -408,9 +432,11 @@ fn extract_min_size(node: &SceneNode) -> Size {
         // RichTextLabel: min_size 默认很小（(1,0)），由容器分配尺寸
         // RichTextLabel 的 autofill 行为和 Label 不同，min_size 不基于文字长度
         "RichTextLabel" => Size::new(1.0, 0.0),
+        // ColorPickerButton: 色块为主，min 很小（godot 默认主题 (8,8)）
+        "ColorPickerButton" => Size::new(8.0, 8.0),
         // Button/CheckBox/CheckButton/LinkButton: 文字宽度（字体度量）+ 主题 padding
         // padding 来自 Godot 默认主题的 StyleBox 内容边距（实测）
-        "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton"
+        "Button" | "CheckBox" | "CheckButton" | "LinkButton"
         | "MenuButton" | "OptionButton" => {
             let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
             let text = get_string_prop(node, "text").unwrap_or_default();
@@ -421,14 +447,19 @@ fn extract_min_size(node: &SceneNode) -> Size {
             //   ColorPickerButton: 色块为主
             //   MenuButton/OptionButton: 含下拉箭头
             let (pad, min_w) = match ty {
-                "LinkButton" => (10.0, 20.0),  // 无边框，padding 小
+                "LinkButton" => (0.0, 0.0),   // 无 StyleBox，min = 纯文字宽度
                 "CheckBox" | "CheckButton" => (24.0, 40.0),
-                "ColorPickerButton" => (0.0, 30.0),
                 "MenuButton" | "OptionButton" => (30.0, 40.0),
                 _ => (16.0, 40.0),  // Button
             };
             let w = (text_w + pad).max(min_w);
-            Size::new(w, 31.0)
+            // 高度：LinkButton 无边框，高度 = 文字行高（和 Label 一样，godot 实测 23）
+            // 其他按钮（Button/CheckBox 等）有 StyleBox，高度固定 31（godot 默认主题）
+            let h = match ty {
+                "LinkButton" => hal_font::line_height(font_size),
+                _ => 31.0,
+            };
+            Size::new(w, h)
         }
         // SpinBox: 实际是 LineEdit + 上下箭头，min 宽度由数字位数决定
         "SpinBox" => Size::new(40.0, 31.0),
@@ -534,6 +565,8 @@ mod tests {
                 Some(ContainerType::Center) => "Center",
                 Some(ContainerType::Tab { .. }) => "Tab",
                 Some(ContainerType::Foldable { .. }) => "Foldable",
+                Some(ContainerType::AspectRatio { .. }) => "AspectRatio",
+                Some(ContainerType::Grid { .. }) => "Grid",
                 None => "None",
             };
             node_ty == ty || node.children.iter().any(|c| find_container(c, ty))
