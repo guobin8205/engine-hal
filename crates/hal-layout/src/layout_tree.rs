@@ -113,6 +113,9 @@ pub enum ContainerType {
     HSplit { separation: f32, split_offset: f32 },
     /// VSplitContainer：垂直分割
     VSplit { separation: f32, split_offset: f32 },
+    /// TabContainer：只渲染当前 tab（current_tab），顶部留出 tab_bar_height。
+    /// content 侧用 panel_margins 作为内边距（默认主题 panel_style margin 通常为 0）。
+    Tab { tab_bar_height: f32, current_tab: i32, panel_left: f32, panel_top: f32, panel_right: f32, panel_bottom: f32 },
 }
 
 /// 节点的计算结果（Godot 坐标系：左上角原点，Y 向下）。
@@ -241,7 +244,10 @@ impl LayoutNode {
                 }
             }
             ContainerType::HSplit { separation, split_offset } => {
-                // SplitContainer 独立算法（对齐 Godot _update_default_dragger_positions）
+                // SplitContainer 算法精确移植 Godot 4.6：
+                //   split_container.cpp::_update_default_dragger_positions
+                //   + _update_dragger_positions + _resort
+                // Godot 4.6 默认 DISABLE_DEPRECATED，所以不走 2-EXPAND 特殊情况。
                 let n = self.children.len();
                 if n == 0 { return; }
                 if n == 1 {
@@ -251,130 +257,83 @@ impl LayoutNode {
                     return;
                 }
 
-                let sep_total = separation * (n as f32 - 1.0);
-
-                // 如果有显式 split_offset，直接用
-                if split_offset != 0.0 {
-                    let first_w = split_offset.max(0.0);
-                    self.children[0].computed.position = (0.0, 0.0);
-                    self.children[0].computed.size = Size::new(first_w, my_size.height);
-                    self.children[0].layout_children();
-                    let mut x = first_w + separation;
-                    let rest = if n > 1 { (my_size.width - first_w - sep_total) / (n as f32 - 1.0) } else { 0.0 };
-                    for child in self.children.iter_mut().skip(1) {
-                        child.computed.position = (x, 0.0);
-                        child.computed.size = Size::new(rest, my_size.height);
-                        child.layout_children();
-                        x += rest + separation;
-                    }
-                    return;
-                }
-
-                // 无 split_offset → 用 SplitContainer stretch 算法
-                // 1. 所有子节点先拿 min_size
                 let min_sizes: Vec<f32> = self.children.iter()
                     .map(|c| c.combined_min_size().width).collect();
-                let min_total: f32 = min_sizes.iter().sum();
-                let stretchable = my_size.width - min_total - sep_total;
+                let is_expand: Vec<bool> = self.children.iter()
+                    .map(|c| c.size_flags_horizontal.is_expand() && c.stretch_ratio > 0.0)
+                    .collect();
+                let stretch_ratios: Vec<f32> = self.children.iter()
+                    .map(|c| c.stretch_ratio).collect();
 
-                // 2. EXPAND 子节点瓜分 stretchable 空间
-                let total_stretch: f32 = self.children.iter()
-                    .filter(|c| c.size_flags_horizontal.is_expand())
-                    .map(|c| c.stretch_ratio).sum();
+                let final_sizes = compute_split_sizes(
+                    my_size.width, separation, &min_sizes, &is_expand, &stretch_ratios,
+                    split_offset,
+                );
 
-                let mut final_sizes = min_sizes.clone();
-                if total_stretch > 0.0 && stretchable > 0.0 {
-                    let last_expand = self.children.iter().enumerate()
-                        .filter(|(_, c)| c.size_flags_horizontal.is_expand())
-                        .map(|(i, _)| i).last();
-                    let mut allocated = 0.0f32;
-                    for (i, child) in self.children.iter().enumerate() {
-                        if child.size_flags_horizontal.is_expand() {
-                            let extra = (stretchable * child.stretch_ratio / total_stretch).floor();
-                            allocated += extra;
-                            final_sizes[i] += extra;
-                            if Some(i) == last_expand {
-                                final_sizes[i] += stretchable - allocated.floor();
-                            }
-                        }
-                    }
-                }
-
-                // 3. 排列
                 let mut x = 0.0f32;
                 for (i, child) in self.children.iter_mut().enumerate() {
+                    let w = final_sizes[i].max(0.0);
                     child.computed.position = (x, 0.0);
-                    child.computed.size = Size::new(final_sizes[i], my_size.height);
+                    child.computed.size = Size::new(w, my_size.height);
                     child.layout_children();
-                    x += final_sizes[i] + separation;
+                    x += w + separation;
                 }
             }
             ContainerType::VSplit { separation, split_offset } => {
+                // 同 HSplit，只是轴向换成垂直
                 let n = self.children.len();
                 if n == 0 { return; }
                 if n == 1 {
                     self.children[0].computed.position = (0.0, 0.0);
                     self.children[0].computed.size = my_size;
                     self.children[0].layout_children();
-                    return;
-                }
-
-                let sep_total = separation * (n as f32 - 1.0);
-
-                if split_offset != 0.0 {
-                    let first_h = split_offset.max(0.0);
-                    self.children[0].computed.position = (0.0, 0.0);
-                    self.children[0].computed.size = Size::new(my_size.width, first_h);
-                    self.children[0].layout_children();
-                    let mut y = first_h + separation;
-                    let rest = if n > 1 { (my_size.height - first_h - sep_total) / (n as f32 - 1.0) } else { 0.0 };
-                    for child in self.children.iter_mut().skip(1) {
-                        child.computed.position = (0.0, y);
-                        child.computed.size = Size::new(my_size.width, rest);
-                        child.layout_children();
-                        y += rest + separation;
-                    }
                     return;
                 }
 
                 let min_sizes: Vec<f32> = self.children.iter()
                     .map(|c| c.combined_min_size().height).collect();
-                let min_total: f32 = min_sizes.iter().sum();
-                let stretchable = my_size.height - min_total - sep_total;
+                let is_expand: Vec<bool> = self.children.iter()
+                    .map(|c| c.size_flags_vertical.is_expand() && c.stretch_ratio > 0.0)
+                    .collect();
+                let stretch_ratios: Vec<f32> = self.children.iter()
+                    .map(|c| c.stretch_ratio).collect();
 
-                let total_stretch: f32 = self.children.iter()
-                    .filter(|c| c.size_flags_vertical.is_expand())
-                    .map(|c| c.stretch_ratio).sum();
-
-                let mut final_sizes = min_sizes.clone();
-                if total_stretch > 0.0 && stretchable > 0.0 {
-                    let last_expand = self.children.iter().enumerate()
-                        .filter(|(_, c)| c.size_flags_vertical.is_expand())
-                        .map(|(i, _)| i).last();
-                    let mut allocated = 0.0f32;
-                    for (i, child) in self.children.iter().enumerate() {
-                        if child.size_flags_vertical.is_expand() {
-                            let extra = (stretchable * child.stretch_ratio / total_stretch).floor();
-                            allocated += extra;
-                            final_sizes[i] += extra;
-                            if Some(i) == last_expand {
-                                final_sizes[i] += stretchable - allocated.floor();
-                            }
-                        }
-                    }
-                }
+                let final_sizes = compute_split_sizes(
+                    my_size.height, separation, &min_sizes, &is_expand, &stretch_ratios,
+                    split_offset,
+                );
 
                 let mut y = 0.0f32;
                 for (i, child) in self.children.iter_mut().enumerate() {
+                    let h = final_sizes[i].max(0.0);
                     child.computed.position = (0.0, y);
-                    child.computed.size = Size::new(my_size.width, final_sizes[i]);
+                    child.computed.size = Size::new(my_size.width, h);
                     child.layout_children();
-                    y += final_sizes[i] + separation;
+                    y += h + separation;
                 }
             }
             ContainerType::Margin { left, top, right, bottom } => {
                 // 子节点被裁剪到 margin 内（clamp 防止负值）
                 if let Some(child) = self.children.first_mut() {
+                    child.computed.position = (left, top);
+                    child.computed.size = Size::new(
+                        (my_size.width - left - right).max(0.0),
+                        (my_size.height - top - bottom).max(0.0),
+                    );
+                    child.layout_children();
+                }
+            }
+            ContainerType::Tab { tab_bar_height, current_tab, panel_left, panel_top, panel_right, panel_bottom } => {
+                // 对齐 Godot TabContainer::_repaint_internal：
+                // 当前 tab（current_tab）用 FullRect + 顶部偏移 tab_bar_height，
+                // 再叠加 panel_style 的四边 margin。其余 tab 隐藏（不参与布局）。
+                let idx = current_tab as usize;
+                if idx < self.children.len() {
+                    let child = &mut self.children[idx];
+                    let left = panel_left;
+                    let top = tab_bar_height + panel_top;
+                    let right = panel_right;
+                    let bottom = panel_bottom;
                     child.computed.position = (left, top);
                     child.computed.size = Size::new(
                         (my_size.width - left - right).max(0.0),
@@ -583,6 +542,19 @@ impl LayoutNode {
                     let sep_total = if n > 0 { separation * (n as f32 - 1.0) } else { 0.0 };
                     Size::new(total.width + sep_total, total.height)
                 }
+                ContainerType::Tab { tab_bar_height, current_tab, panel_left, panel_top, panel_right, panel_bottom } => {
+                    // min_size = 当前 tab 内容 min_size + tab_bar_height + panel margins
+                    let idx = current_tab as usize;
+                    if idx < self.children.len() {
+                        let cm = self.children[idx].combined_min_size();
+                        Size::new(
+                            cm.width + panel_left + panel_right,
+                            cm.height + tab_bar_height + panel_top + panel_bottom,
+                        )
+                    } else {
+                        Size::new(0.0, tab_bar_height)
+                    }
+                }
             }
         } else {
             self.min_size
@@ -635,6 +607,176 @@ impl LayoutNode {
     }
 }
 
+/// SplitContainer 核心算法（移植自 Godot 4.6 `split_container.cpp`）。
+///
+/// 输入沿主轴的信息，返回每个子节点的最终尺寸（不含 separation）。
+/// 调用方负责按 `final_size[i] + separation` 累加 position。
+///
+/// 算法分两步（对齐 Godot `_update_default_dragger_positions` + `_update_dragger_positions`）：
+/// 1. 用 stretch 算法算出每个子节点的"默认尺寸" → 推出 `default_dragger_positions`
+/// 2. `dragger_positions[i] = CLAMP(default[i] + split_offset, valid_range)`
+///    其中 valid_range 由左右子节点 min_size 决定（防止拖拽越过 min 边界）
+///
+/// Godot 4.6 默认 `DISABLE_DEPRECATED`，所以不走"2 个 EXPAND 特殊情况"。
+fn compute_split_sizes(
+    size: f32,
+    separation: f32,
+    min_sizes: &[f32],
+    is_expand: &[bool],
+    stretch_ratios: &[f32],
+    split_offset: f32,
+) -> Vec<f32> {
+    let n = min_sizes.len();
+    if n == 0 {
+        return Vec::new();
+    }
+    if n == 1 {
+        return vec![size.max(0.0)];
+    }
+
+    let sep = separation;
+    let size_int = size.round() as i64;
+
+    // ---- Step 1: stretch 算法（_update_default_dragger_positions 的 StretchData 部分）----
+    #[derive(Clone, Copy)]
+    struct StretchData {
+        min_size: i64,
+        final_size: i64,
+        stretch_ratio: f32,
+        expand_flag: bool,
+        will_stretch: bool,
+    }
+
+    let mut stretch_data: Vec<StretchData> = (0..n)
+        .map(|i| StretchData {
+            min_size: min_sizes[i].round() as i64,
+            final_size: min_sizes[i].round() as i64,
+            stretch_ratio: if is_expand[i] { stretch_ratios[i] } else { 0.0 },
+            expand_flag: is_expand[i],
+            will_stretch: is_expand[i],
+        })
+        .collect();
+
+    // stretchable_space = size - sep * (n - 1)
+    let mut stretchable_space = size_int - sep.round() as i64 * (n as i64 - 1);
+    let mut stretch_total: f32 = 0.0;
+    let mut expand_count = 0;
+    for sdata in &stretch_data {
+        if sdata.expand_flag {
+            stretch_total += sdata.stretch_ratio;
+            expand_count += 1;
+        } else {
+            stretchable_space -= sdata.min_size;
+        }
+    }
+
+    // while 循环（Godot 第 765-804 行）。max_size 限制不实现（默认无 max）。
+    while stretch_total > 0.0 && stretchable_space > 0 {
+        let mut refit_successful = true;
+        let mut error: f32 = 0.0;
+        for sdata in &mut stretch_data {
+            if !sdata.will_stretch {
+                continue;
+            }
+            let desired = sdata.stretch_ratio / stretch_total * stretchable_space as f32;
+            error += desired - desired.trunc();
+            if (desired as i64) < sdata.min_size {
+                // 不再 stretch，扣回 min_size
+                stretch_total -= sdata.stretch_ratio;
+                stretchable_space -= sdata.min_size;
+                sdata.will_stretch = false;
+                sdata.final_size = sdata.min_size;
+                refit_successful = false;
+                break;
+            } else {
+                sdata.final_size = desired as i64;
+                if error >= 1.0 {
+                    sdata.final_size += 1;
+                    error -= 1.0;
+                }
+            }
+        }
+        if refit_successful {
+            break;
+        }
+    }
+
+    // default_dragger_positions（Godot 第 806-824 行）
+    let mut default_positions: Vec<i64> = Vec::with_capacity(n - 1);
+    let mut pos: i64 = 0;
+    let mut expands_seen = 0;
+    for i in 0..(n - 1) {
+        pos += stretch_data[i].final_size;
+        if stretch_data[i].expand_flag {
+            expands_seen += 1;
+        }
+        let dragger = if expands_seen == 0 {
+            0
+        } else if expands_seen >= expand_count {
+            size_int - sep.round() as i64
+        } else {
+            pos
+        };
+        default_positions.push(dragger);
+        pos += sep.round() as i64;
+    }
+
+    // ---- Step 2: 应用 split_offset + clamp（_update_dragger_positions）----
+    // 简化：只支持单 dragger（split_offset 是单个值），对齐 Godot 单分割线场景。
+    // dragger_positions[i] = CLAMP(default[i] + split_offset, valid_range.x, valid_range.y)
+    let split_off = split_offset.round() as i64;
+    let mut dragger_positions = Vec::with_capacity(n - 1);
+    for i in 0..(n - 1) {
+        let valid_range = split_valid_range(size_int, sep.round() as i64, min_sizes, i);
+        let clamped = (default_positions[i] + split_off).clamp(valid_range.0, valid_range.1);
+        dragger_positions.push(clamped);
+    }
+
+    // 防止相邻 dragger 重叠（对齐 Godot 第 864-875 行的 p_clamp_index == -1 分支）
+    for i in 0..(dragger_positions.len().saturating_sub(1)) {
+        let check_min = min_sizes[i + 1].round() as i64;
+        let push_pos = dragger_positions[i] + sep.round() as i64 + check_min;
+        if dragger_positions[i + 1] < push_pos {
+            dragger_positions[i + 1] = push_pos;
+        }
+    }
+
+    // ---- 把 dragger_positions 转成每个子节点的 final_size（_resort 第 963-982 行）----
+    // start_pos[i] = i==0 ? 0 : dragger_positions[i-1] + sep
+    // end_pos[i] = i >= n-1 ? size : dragger_positions[i]
+    // size_i = end_pos - start_pos
+    let mut final_sizes = Vec::with_capacity(n);
+    for i in 0..n {
+        let start = if i == 0 { 0 } else { dragger_positions[i - 1] + sep.round() as i64 };
+        let end = if i >= n - 1 { size_int } else { dragger_positions[i] };
+        final_sizes.push((end - start) as f32);
+    }
+
+    final_sizes
+}
+
+/// SplitContainer 的 valid_range（移植自 Godot `_get_valid_range`，简化版，忽略 max_size）。
+///
+/// 返回 (min_pos, max_pos)，dragger 位置 clamp 到此区间。
+/// min_pos = sep*i + 左侧子节点 min_size 之和
+/// max_pos = size - sep*(n-1-i) - 右侧子节点 min_size 之和
+fn split_valid_range(size: i64, sep: i64, min_sizes: &[f32], dragger_index: usize) -> (i64, i64) {
+    let n = min_sizes.len();
+    let mut position_range = (0i64, size);
+    position_range.0 += sep * dragger_index as i64;
+    position_range.1 -= sep * ((n - 1 - dragger_index) as i64);
+
+    for i in 0..n {
+        let cms = min_sizes[i].round() as i64;
+        if i <= dragger_index {
+            position_range.0 += cms;
+        } else {
+            position_range.1 -= cms;
+        }
+    }
+    position_range
+}
+
 /// 扁平化的布局结果（用于喂给 scene_builder / Cocos）。
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlatNode {
@@ -667,7 +809,7 @@ mod tests {
         let mut root = LayoutNode::new("root", Preset::FullRect.to_anchors(), Offsets {
             offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
         });
-        let mut child = LayoutNode::new("center", Preset::Center.to_anchors(), Offsets {
+        let child = LayoutNode::new("center", Preset::Center.to_anchors(), Offsets {
             offset_left: -50.0, offset_top: -25.0, offset_right: 50.0, offset_bottom: 25.0
         });
         root.add_child(child);

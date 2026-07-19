@@ -107,6 +107,21 @@ fn build_children_recursive(
 ) {
     let root_name = &scene.nodes[0].name;
 
+    // 如果当前节点是 TabContainer，只构建 current_tab 对应的子节点。
+    // 其余 tab 在 Godot 里 hide（不参与布局），hal 不构建它们。
+    let tab_current: Option<i32> = scene.nodes.iter()
+        .find(|n| node_path(n, root_name) == current_path)
+        .and_then(|n| {
+            if n.r#type.as_deref() == Some("TabContainer") {
+                Some(get_int(n, "current_tab").unwrap_or(0) as i32)
+            } else {
+                None
+            }
+        });
+
+    // visible 的 tab 子节点计数（用于 TabContainer 的 current_tab 匹配）
+    let mut visible_child_index = 0i32;
+
     for node in &scene.nodes {
         // 判断 node 是否是 current_path 的直接子节点
         let is_child = match &node.parent {
@@ -127,6 +142,14 @@ fn build_children_recursive(
             };
             if !is_visible {
                 continue;
+            }
+            // TabContainer：跳过非当前 tab
+            if let Some(ct) = tab_current {
+                if visible_child_index != ct {
+                    visible_child_index += 1;
+                    continue;
+                }
+                visible_child_index += 1;
             }
             let mut child = convert_node(scene, node);
             let child_path = if current_path == root_name {
@@ -221,6 +244,13 @@ fn extract_anchors_offsets(node: &SceneNode) -> (AnchorsPreset, Offsets) {
     (anchors, offsets)
 }
 
+/// SplitContainer 默认 separation（对齐 Godot 默认主题 grabber icon 宽度）。
+///
+/// Godot 的 `_get_separation()` 在 `touch_dragger_enabled=false`（默认）时返回
+/// `MAX(theme_separation, grabber_icon_width)`。默认主题 grabber icon 宽 8px，
+/// 所以即使 .tscn 写 `separation=0`，真实分割间距仍是 8。
+const DEFAULT_SPLIT_SEPARATION: f32 = 8.0;
+
 /// 从节点类型推断容器类型。
 fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerType> {
     let ty = node.r#type.as_deref()?;
@@ -242,22 +272,37 @@ fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerTyp
             let (left, top, right, bottom) = get_panel_margins(scene, node);
             Some(ContainerType::Margin { left, top, right, bottom })
         }
-        // HSplitContainer: 用 split_offset 固定第一个子节点宽度
+        // HSplitContainer: split_offset 是相对 default_dragger_position 的偏移
+        // separation 用 max(theme_sep, grabber_width=8) 对齐 Godot _get_separation
         "HSplitContainer" => {
             let split = get_f32(node, "split_offset")
                 .or_else(|| get_int(node, "split_offset").map(|i| i as f32))
                 .unwrap_or(0.0);
-            Some(ContainerType::HSplit { separation: separation.max(4.0), split_offset: split })
+            let sep = separation.max(DEFAULT_SPLIT_SEPARATION);
+            Some(ContainerType::HSplit { separation: sep, split_offset: split })
         }
-        // VSplitContainer: 用 split_offset 固定第一个子节点高度
+        // VSplitContainer: 同 HSplit，轴向垂直
         "VSplitContainer" => {
             let split = get_f32(node, "split_offset")
                 .or_else(|| get_int(node, "split_offset").map(|i| i as f32))
                 .unwrap_or(0.0);
-            Some(ContainerType::VSplit { separation: separation.max(4.0), split_offset: split })
+            let sep = separation.max(DEFAULT_SPLIT_SEPARATION);
+            Some(ContainerType::VSplit { separation: sep, split_offset: split })
         }
-        // TabContainer: 只显示第一个子节点（当前 tab），近似为只有一个子的 VBox
-        "TabContainer" => Some(ContainerType::Margin { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 }),
+        // TabContainer: 只渲染当前 tab（current_tab），顶部留 tab_bar_height。
+        // 默认主题 tab_bar 高度约 31px，panel_style margin 默认 0。
+        // Godot 的 tab_bar_height = tab_bar.min_size.h + tabbar_style.top + tabbar_style.bottom
+        "TabContainer" => {
+            let current_tab = get_int(node, "current_tab").unwrap_or(0) as i32;
+            Some(ContainerType::Tab {
+                tab_bar_height: 31.0,
+                current_tab,
+                panel_left: 0.0,
+                panel_top: 0.0,
+                panel_right: 0.0,
+                panel_bottom: 0.0,
+            })
+        }
         // FoldableContainer: 近似为 VBox（折叠时子节点不可见，但布局上仍占位）
         "FoldableContainer" => Some(ContainerType::VBox { separation: separation.max(4.0) }),
         _ => None,
@@ -279,12 +324,10 @@ fn extract_min_size(node: &SceneNode) -> Size {
     let ty = node.r#type.as_deref().unwrap_or("");
 
     match ty {
-        // Label/RichTextLabel: min_size = text 高度，宽度 = 0（FILL 模式不要求宽度）
+        // Label/RichTextLabel: min_size = 行高，宽度 = 0（FILL 模式不要求宽度，由容器分配）
         "Label" | "RichTextLabel" => {
-            let text = get_string_prop(node, "text").unwrap_or_default();
             let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
             let line_h = font_size * 1.25;
-            // 宽度 = 0（FILL 模式不限制宽度，由容器分配）
             Size::new(0.0, line_h)
         }
         // Button/CheckBox/CheckButton: 根据 text 估算（加 padding）
@@ -340,31 +383,6 @@ fn get_int(node: &SceneNode, key: &str) -> Option<i64> {
     }
 }
 
-impl Preset {
-    /// 从整数枚举值构造 Preset（对应 Godot LayoutPreset 枚举）。
-    fn from_int(value: i64) -> Option<Preset> {
-        match value {
-            0 => Some(Preset::TopLeft),
-            1 => Some(Preset::TopRight),
-            2 => Some(Preset::BottomRight),
-            3 => Some(Preset::BottomLeft),
-            4 => Some(Preset::CenterLeft),
-            5 => Some(Preset::CenterTop),
-            6 => Some(Preset::CenterRight),
-            7 => Some(Preset::CenterBottom),
-            8 => Some(Preset::Center),
-            9 => Some(Preset::LeftWide),
-            10 => Some(Preset::TopWide),
-            11 => Some(Preset::RightWide),
-            12 => Some(Preset::BottomWide),
-            13 => Some(Preset::VCenterWide),
-            14 => Some(Preset::HCenterWide),
-            15 => Some(Preset::FullRect),
-            _ => None,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,6 +431,7 @@ mod tests {
                 Some(ContainerType::HSplit { .. }) => "HSplit",
                 Some(ContainerType::VSplit { .. }) => "VSplit",
                 Some(ContainerType::Center) => "Center",
+                Some(ContainerType::Tab { .. }) => "Tab",
                 None => "None",
             };
             node_ty == ty || node.children.iter().any(|c| find_container(c, ty))

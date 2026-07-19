@@ -60,6 +60,7 @@ fn control_gallery_containers_detected() {
                 ContainerType::HSplit { .. } => *hbox += 1,
                 ContainerType::VSplit { .. } => *vbox += 1,
                 ContainerType::Center => {}
+                ContainerType::Tab { .. } => *margin += 1,
             }
         }
         for child in &node.children {
