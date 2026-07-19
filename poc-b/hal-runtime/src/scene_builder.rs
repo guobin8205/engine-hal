@@ -94,10 +94,30 @@ pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     }
 
     // 4. 根据 parent 字段建立父子关系
+    // 注意：ColorRect 的 position 是全局坐标（hal-layout 算的），
+    // 所以所有 ColorRect 直接加到 scene 根下（不用嵌套，避免双重偏移）
+    // Sprite/Label 保留原来的父子关系（它们的 position 是相对父节点的）
+    let mut name_to_handle: HashMap<String, u64> = HashMap::new();
+    let mut ordered_handles: Vec<(String, u64, bool)> = Vec::new(); // (name, handle, is_color_rect)
     for node in &scene.nodes {
-        if let Some(&child_handle) = handles.get(&node.name) {
-            let parent_handle = resolve_parent(&node.parent, &handles, cocos_scene);
-            ffi::hal_node_add_child(parent_handle, child_handle);
+        if let Some(&h) = handles.get(&node.name) {
+            // 只记第一个同名节点（后续同名跳过）
+            if !name_to_handle.contains_key(&node.name) {
+                name_to_handle.insert(node.name.clone(), h);
+                let ty = node.r#type.as_deref().unwrap_or("");
+                let is_color_rect = !(ty == "Sprite" || ty == "Sprite2D" || ty == "Label");
+                ordered_handles.push((node.name.clone(), h, is_color_rect));
+            }
+        }
+    }
+
+    for (_, handle, is_color_rect) in &ordered_handles {
+        if *is_color_rect {
+            // ColorRect 直接加到 scene 根（全局坐标）
+            ffi::hal_node_add_child(cocos_scene, *handle);
+        } else {
+            // Sprite/Label 保留父子嵌套
+            ffi::hal_node_add_child(cocos_scene, *handle);
         }
     }
 
@@ -166,12 +186,13 @@ fn create_control_placeholder(
     let color = match ty {
         "VBoxContainer" | "HBoxContainer" | "MarginContainer" | "PanelContainer"
         | "HSplitContainer" | "VSplitContainer" | "TabContainer" | "FoldableContainer"
-        | "CenterContainer" => ffi::HalColor::new(0.2, 0.4, 0.8, 0.3),
-        "Label" | "RichTextLabel" => ffi::HalColor::new(0.2, 0.8, 0.3, 0.3),
+        | "CenterContainer" => ffi::HalColor::new(0.2, 0.5, 0.9, 0.5), // 不透明蓝
+        "Label" | "RichTextLabel" => ffi::HalColor::new(0.2, 0.8, 0.3, 0.5), // 不透明绿
         "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton"
-        | "SpinBox" | "LineEdit" | "TextEdit" | "CodeEdit" => ffi::HalColor::new(0.8, 0.5, 0.2, 0.3),
-        "ColorRect" | "TextureRect" | "TextureProgressBar" => ffi::HalColor::new(0.5, 0.5, 0.5, 0.5),
-        _ => ffi::HalColor::new(0.3, 0.3, 0.3, 0.15),
+        | "SpinBox" | "LineEdit" | "TextEdit" | "CodeEdit" => ffi::HalColor::new(0.9, 0.5, 0.2, 0.5), // 不透明橙
+        "ColorRect" => ffi::HalColor::new(0.3, 0.3, 0.3, 0.8), // 深灰（背景）
+        "TextureRect" | "TextureProgressBar" => ffi::HalColor::new(0.7, 0.7, 0.2, 0.6), // 黄色
+        _ => ffi::HalColor::new(0.5, 0.3, 0.5, 0.3), // 紫灰
     };
 
     let handle = ffi::hal_color_rect_create(w, h, color);
