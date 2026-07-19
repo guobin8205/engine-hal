@@ -10,9 +10,15 @@ use std::collections::HashMap;
 
 use cxx::let_cxx_string;
 
+use hal_layout::converter::build_layout_tree;
+use hal_layout::layout_tree::Size;
 use hal_poc::{parse_scene, SceneData, SceneNode, Variant};
 
 use crate::ffi;
+
+/// 窗口尺寸（和 AppDelegate 的 designResolutionSize 一致）
+const WINDOW_WIDTH: f32 = 960.0;
+const WINDOW_HEIGHT: f32 = 640.0;
 
 /// 解析 .tscn 文件并在 Cocos 窗口里显示。
 ///
@@ -50,11 +56,25 @@ pub fn build_scene_from_tscn(tscn_path: &str) -> Result<u64, BuildError> {
 }
 
 /// 根据解析好的 SceneData 构建到 Cocos。
+///
+/// Phase 1 流程：
+/// 1. 用 hal-layout 算每个节点的最终 position+size（重算布局）
+/// 2. 创建 Cocos 节点（Sprite/Label）
+/// 3. 用算好的 position 设置节点位置（翻译层）
 pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     let cocos_scene = ffi::hal_scene_create();
 
-    // 1. 构建 ExtResource 查找表：id → path
-    //    Godot 的 ext_resource path 用 res:// 协议，Cocos 需要 relative path
+    // 0. 用 hal-layout 算布局（Phase 1 新增）
+    let window_size = Size::new(WINDOW_WIDTH, WINDOW_HEIGHT);
+    let layout_tree = build_layout_tree(scene, window_size);
+    let mut layout_map: HashMap<String, (f32, f32)> = HashMap::new();
+    if let Some(ref tree) = layout_tree {
+        for flat in tree.flatten() {
+            layout_map.insert(flat.name.clone(), flat.position);
+        }
+    }
+
+    // 1. 构建 ExtResource 查找表
     let ext_resources: HashMap<&str, &str> = scene
         .ext_resources
         .iter()
@@ -64,14 +84,14 @@ pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     // 2. 节点名 → u64 句柄
     let mut handles: HashMap<String, u64> = HashMap::new();
 
-    // 3. 第一遍：创建所有节点
+    // 3. 创建所有节点
     for node in &scene.nodes {
-        if let Some(handle) = create_node(node, &ext_resources) {
+        if let Some(handle) = create_node(node, &ext_resources, &layout_map) {
             handles.insert(node.name.clone(), handle);
         }
     }
 
-    // 4. 第二遍：根据 parent 字段建立父子关系
+    // 4. 根据 parent 字段建立父子关系
     for node in &scene.nodes {
         if let Some(&child_handle) = handles.get(&node.name) {
             let parent_handle = resolve_parent(&node.parent, &handles, cocos_scene);
@@ -106,34 +126,19 @@ fn resolve_parent(
 fn create_node(
     node: &SceneNode,
     ext_resources: &HashMap<&str, &str>,
+    layout_map: &HashMap<String, (f32, f32)>,
 ) -> Option<u64> {
     let node_type = node.r#type.as_deref().unwrap_or("Node");
-    eprintln!(
-        "POC-B2 [Rust]: 创建节点 '{}' (type={})",
-        node.name, node_type
-    );
 
     let handle = match node_type {
         "Sprite" | "Sprite2D" => create_sprite_node(node, ext_resources)?,
         "Label" => create_label_node(node)?,
-        // 其他类型（Control/Panel/Node2D 等）POC-B2 暂不映射，跳过
-        other => {
-            eprintln!("POC-B2 [Rust]: 跳过未支持的节点类型 '{}'", other);
-            return None;
-        }
+        // Phase 1 阶段其他 UI 类型暂不支持渲染，但布局已计算
+        _ => return None,
     };
 
     if handle != 0 {
-        eprintln!(
-            "POC-B2 [Rust]: 节点 '{}' 创建成功，handle={}",
-            node.name, handle
-        );
-        apply_common_props(handle, node);
-    } else {
-        eprintln!(
-            "POC-B2 [Rust]: 节点 '{}' 创建失败（facade 返回 0）",
-            node.name
-        );
+        apply_common_props(handle, node, layout_map);
     }
 
     Some(handle)
@@ -187,27 +192,20 @@ fn create_label_node(node: &SceneNode) -> Option<u64> {
     Some(ffi::hal_label_create(&c_text, &c_font, 24.0))
 }
 
-/// Godot 坐标系：左上角原点，Y 向下
-/// Cocos 坐标系：左下角原点，Y 向上
-/// 转换：cocos_y = WINDOW_HEIGHT - godot_y
-///
-/// POC 阶段硬编码窗口高度（AppDelegate 用 640）。
-/// 正式版应该从 Director 动态获取 VisibleSize。
-const WINDOW_HEIGHT: f32 = 640.0;
-
-fn apply_common_props(handle: u64, node: &SceneNode) {
-    // position: Vector2(x, y) — 需要翻转 Y 轴（Godot Y 向下，Cocos Y 向上）
-    //
-    // 注意（Phase 1 待解决）：Label 节点在 Godot 里用 offset_left/top/right/bottom
-    // 表达位置，position 是衍生属性。Cocos Label 的 anchor point 默认是 (0.5, 0.5)
-    // 中心对齐，和 Godot 的左上角对齐不同，会导致位置整体偏移。
-    // 完整的 UI 精确布局需要处理：
-    //   - offset_* → position 的精确转换
-    //   - anchor point 映射
-    //   - 实际窗口尺寸 vs designResolutionSize
-    if let Some(Variant::Vector2(v)) =
+fn apply_common_props(
+    handle: u64,
+    node: &SceneNode,
+    layout_map: &HashMap<String, (f32, f32)>,
+) {
+    // position：优先用 hal-layout 算出的（Phase 1），fallback 到 props 里的 position
+    if let Some(&(x, y)) = layout_map.get(&node.name) {
+        // hal-layout 输出 Godot 坐标系（左上原点，Y 向下），转 Cocos（左下原点，Y 向上）
+        let cocos_y = WINDOW_HEIGHT - y;
+        ffi::hal_node_set_position(handle, x, cocos_y);
+    } else if let Some(Variant::Vector2(v)) =
         node.props.iter().find(|(k, _)| k == "position").map(|(_, v)| v)
     {
+        // fallback：直接用 Godot position（POC-B 的行为）
         let cocos_y = WINDOW_HEIGHT - v.y;
         ffi::hal_node_set_position(handle, v.x, cocos_y);
     }

@@ -9,6 +9,7 @@ description = "Engine-HAL POC-B: Rust runtime that drives Cocos2d-x via cxx brid
 cxx = "1.0"
 glam = "0.33"
 hal-poc = { path = "../../crates/hal-poc" }
+hal-layout = { path = "../../crates/hal-layout" }
 
 # POC-B 只在 Windows + Win32 (i686) 跑
 [target.'cfg(target_arch = "x86")'.dependencies]
