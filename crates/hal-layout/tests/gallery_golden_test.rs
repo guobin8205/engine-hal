@@ -190,13 +190,12 @@ fn control_gallery_matches_godot() {
         }
     }
 
-    println!("\n注: 剩余不匹配均为 min_size 估算误差或特殊节点（GraphEdit 自动布局、FoldableContainer 标题栏、HSlider 主题高度）。");
-    println!("本次验证目标（SplitContainer 嵌套 + TabContainer 标签栏）已全部修复。");
+    println!("\n支持的容器：HBox/VBox/Margin/Center/HSplit/VSplit/Tab/Foldable/GraphFrame");
 
-    // 核心目标（SplitContainer + TabContainer）已修复，实际对比匹配率应 >= 90%
+    // 所有支持的容器类型都已精确匹配 Godot，实际对比匹配率应 = 100%
     assert!(
-        match_rate >= 90.0,
-        "control_gallery 实际对比匹配率 {:.1}% 低于 90% 阈值，需检查 SplitContainer/TabContainer 回归",
+        match_rate >= 99.0,
+        "control_gallery 实际对比匹配率 {:.1}% 低于 99% 阈值",
         match_rate
     );
 }

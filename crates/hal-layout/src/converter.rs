@@ -175,8 +175,14 @@ fn convert_node(scene: &SceneData, scene_node: &SceneNode) -> LayoutNode {
     layout.container = container;
     layout.min_size = min_size;
 
-    layout.size_flags_horizontal = SizeFlags::new(get_int(scene_node, "size_flags_horizontal").unwrap_or(1) as u32);
-    layout.size_flags_vertical = SizeFlags::new(get_int(scene_node, "size_flags_vertical").unwrap_or(1) as u32);
+    layout.size_flags_horizontal = SizeFlags::new(
+        get_int(scene_node, "size_flags_horizontal")
+            .unwrap_or(default_h_size_flags(scene_node)) as u32,
+    );
+    layout.size_flags_vertical = SizeFlags::new(
+        get_int(scene_node, "size_flags_vertical")
+            .unwrap_or(default_v_size_flags(scene_node)) as u32,
+    );
     layout.stretch_ratio = get_f32(scene_node, "size_flags_stretch_ratio").unwrap_or(1.0);
     layout.layout_mode = get_int(scene_node, "layout_mode").unwrap_or(0) as i32;
     layout.grow_h = GrowDirection::from_int(get_int(scene_node, "grow_horizontal").unwrap_or(1));
@@ -303,9 +309,73 @@ fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerTyp
                 panel_bottom: 0.0,
             })
         }
-        // FoldableContainer: 近似为 VBox（折叠时子节点不可见，但布局上仍占位）
-        "FoldableContainer" => Some(ContainerType::VBox { separation: separation.max(4.0) }),
+        // FoldableContainer: 标题栏 + 内容区（移植自 Godot foldable_container.cpp）
+        // title_height 来自主题（title_style margin + 字体行高），默认约 31
+        // panel margins 来自 panel_style，默认主题 (4,0,4,4)
+        // folded=true 时子节点 hide（build_children_recursive 已跳过 visible=false 子节点）
+        "FoldableContainer" => {
+            let folded = get_prop(node, "folded").and_then(|v| match v {
+                Variant::Bool(b) => Some(*b),
+                _ => None,
+            }).unwrap_or(false);
+            let title_position = get_int(node, "title_position").unwrap_or(0) as i32;
+            Some(ContainerType::Foldable {
+                folded,
+                title_height: 31.0,
+                title_position,
+                panel_left: 4.0,
+                panel_top: 0.0,
+                panel_right: 4.0,
+                panel_bottom: 4.0,
+            })
+        }
+        // GraphFrame: GraphElement 子类（Container），布局 = titlebar + 单一内容区。
+        // 移植自 Godot graph_frame.cpp::_resort：
+        //   内容区 offset = (panel.left, panel.top + titlebar_min.h + titlebar_sb.min.h)
+        //   内容区 size = frame.size - panel.margins - (0, titlebar_min.h + titlebar_sb.min.h)
+        // 默认主题 panel margins=(18,12,18,12)，titlebar 文字行高 31 + titlebar stylebox 8 = 39。
+        // 近似为 Margin{18, 51, 18, 12}（top = panel.top 12 + titlebar_total 39）。
+        // GraphNode（叶子，无子节点）会被放进内容区。GraphNode 内部的 slot 布局未实现
+        // （需要时再加，sgs-main 业务 UI 不使用 GraphNode）。
+        "GraphFrame" => Some(ContainerType::Margin {
+            left: 18.0,
+            top: 51.0,
+            right: 18.0,
+            bottom: 12.0,
+        }),
         _ => None,
+    }
+}
+
+/// 节点类型的默认水平 size_flags（对齐 Godot 各 Control 子类的构造函数默认值）。
+///
+/// .tscn 里只有显式写的 size_flags 才生效（和 anchor 一样）。
+/// 没写时用 Godot 类的运行时默认值。大多数 Control 子类默认 SIZE_FILL(1)，
+/// 少数在构造函数里覆盖。
+fn default_h_size_flags(node: &SceneNode) -> i64 {
+    let ty = node.r#type.as_deref().unwrap_or("");
+    match ty {
+        // VSlider 构造 (slider.h): Slider(VERTICAL) { set_h_size_flags(0); }
+        "VSlider" | "VScrollBar" => 0,
+        _ => 1, // SIZE_FILL
+    }
+}
+
+/// 节点类型的默认垂直 size_flags。
+///
+/// 关键：Label 在构造函数里 `set_v_size_flags(SIZE_SHRINK_CENTER)`，
+/// 所以 .tscn 没写 size_flags_vertical 时，Label 的 vsf=4（不是 1）。
+/// 这影响 BoxContainer 交叉轴对齐（Label 在 HBox 里垂直居中而非填满）。
+fn default_v_size_flags(node: &SceneNode) -> i64 {
+    let ty = node.r#type.as_deref().unwrap_or("");
+    match ty {
+        // Label 构造函数: set_v_size_flags(SIZE_SHRINK_CENTER)
+        "Label" | "RichTextLabel" => 4, // SIZE_SHRINK_CENTER
+        // HSlider 构造 (slider.h): Slider(HORIZONTAL) { set_v_size_flags(0); }
+        // ProgressBar 构造 (progress_bar.cpp): set_v_size_flags(0);
+        // → 交叉轴（垂直）不 FILL，用 min_size + 默认对齐（BEGIN）
+        "HSlider" | "HScrollBar" | "ProgressBar" => 0,
+        _ => 1, // SIZE_FILL
     }
 }
 
@@ -343,11 +413,17 @@ fn extract_min_size(node: &SceneNode) -> Size {
         "TextEdit" | "CodeEdit" => Size::new(256.0, 200.0),
         // Tree: 默认 100x100
         "Tree" => Size::new(100.0, 100.0),
-        // HSeparator/VSeparator: 细长
+        // HSeparator/VSeparator: 细长（Godot 默认主题 separation=4 + 上下 margin）
         "HSeparator" => Size::new(0.0, 4.0),
         "VSeparator" => Size::new(4.0, 0.0),
-        // TextureProgressBar: 默认 128x128
-        "TextureProgressBar" => Size::new(128.0, 128.0),
+        // Slider/ProgressBar 类：水平方向 min_w 小，高度由主题决定
+        // HSlider/HProgressBar 默认主题高度约 16-27
+        "HSlider" | "HScrollBar" => Size::new(8.0, 16.0),
+        "VSlider" | "VScrollBar" => Size::new(16.0, 8.0),
+        "ProgressBar" => Size::new(4.0, 27.0),
+        // TextureProgressBar: 无 texture 时 min=(1,1)（不是 128x128）
+        // 实际尺寸由 texture 决定，hal-layout 不加载 texture，给最小值
+        "TextureProgressBar" => Size::new(1.0, 1.0),
         // 其他 Control: min_size = 0（由子节点决定）
         _ => Size::ZERO,
     }
@@ -432,6 +508,7 @@ mod tests {
                 Some(ContainerType::VSplit { .. }) => "VSplit",
                 Some(ContainerType::Center) => "Center",
                 Some(ContainerType::Tab { .. }) => "Tab",
+                Some(ContainerType::Foldable { .. }) => "Foldable",
                 None => "None",
             };
             node_ty == ty || node.children.iter().any(|c| find_container(c, ty))

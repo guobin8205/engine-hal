@@ -116,6 +116,11 @@ pub enum ContainerType {
     /// TabContainer：只渲染当前 tab（current_tab），顶部留出 tab_bar_height。
     /// content 侧用 panel_margins 作为内边距（默认主题 panel_style margin 通常为 0）。
     Tab { tab_bar_height: f32, current_tab: i32, panel_left: f32, panel_top: f32, panel_right: f32, panel_bottom: f32 },
+    /// FoldableContainer：标题栏 + 内容区。
+    /// folded=true 时只显示标题栏（子节点 hide）；folded=false 时子节点放在
+    /// Margin{panel_left, title_height+panel_top, panel_right, panel_bottom}。
+    /// title_position=0(top) 标题在顶部，=1(bottom) 标题在底部（影响 y 偏移方向）。
+    Foldable { folded: bool, title_height: f32, title_position: i32, panel_left: f32, panel_top: f32, panel_right: f32, panel_bottom: f32 },
 }
 
 /// 节点的计算结果（Godot 坐标系：左上角原点，Y 向下）。
@@ -342,36 +347,42 @@ impl LayoutNode {
                     child.layout_children();
                 }
             }
+            ContainerType::Foldable { folded, title_height, title_position, panel_left, panel_top, panel_right, panel_bottom } => {
+                // 对齐 Godot FoldableContainer NOTIFICATION_SORT_CHILDREN：
+                // inner_rect.y = panel_top + (title_position==TOP ? title_height : 0)
+                // inner_rect.height = size.h - panel_top - panel_bottom - title_height
+                // folded=true 时子节点 hide（不布局）
+                if folded {
+                    return;
+                }
+                if let Some(child) = self.children.first_mut() {
+                    let left = panel_left;
+                    let top = if title_position == 0 {
+                        panel_top + title_height
+                    } else {
+                        panel_top // 标题在底部，内容从顶部开始
+                    };
+                    let right = panel_right;
+                    let bottom = panel_bottom + if title_position == 0 { 0.0 } else { title_height };
+                    child.computed.position = (left, top);
+                    child.computed.size = Size::new(
+                        (my_size.width - left - right).max(0.0),
+                        (my_size.height - top - bottom).max(0.0),
+                    );
+                    child.layout_children();
+                }
+            }
             ContainerType::HBox { separation } => {
                 let n = self.children.len();
                 if n == 0 {
                     return;
                 }
 
-                // 统计 EXPAND 子节点
-                let expand_count = self.children.iter()
-                    .filter(|c| c.size_flags_horizontal.is_expand()).count();
+                // 统计 EXPAND 子节点（Godot BoxContainer 没有 2-EXPAND 特殊情况，
+                // 走通用 stretch 算法，所有 EXPAND 子节点一视同仁）
                 let total_stretch: f32 = self.children.iter()
                     .filter(|c| c.size_flags_horizontal.is_expand())
                     .map(|c| c.stretch_ratio).sum();
-
-                // Godot 特殊情况：恰好 2 个 EXPAND 子节点时，忽略 min_size，直接按 ratio 瓜分总宽度
-                if expand_count == 2 && n == 2 && total_stretch > 0.0 {
-                    let sep_total = separation * (n as f32 - 1.0);
-                    let total_w = my_size.width;
-                    let ratio0 = self.children[0].stretch_ratio / total_stretch;
-                    let first_w = (total_w * ratio0 - separation * 0.5).floor();
-                    let second_w = total_w - first_w - sep_total;
-
-                    self.children[0].computed.position = (0.0, 0.0);
-                    self.children[0].computed.size = Size::new(first_w, my_size.height);
-                    self.children[0].layout_children();
-
-                    self.children[1].computed.position = (first_w + separation, 0.0);
-                    self.children[1].computed.size = Size::new(second_w, my_size.height);
-                    self.children[1].layout_children();
-                    return;
-                }
 
                 // 常规 HBox 算法
                 // 非 EXPAND 子节点的 min_size 计入 fixed_width
@@ -408,12 +419,15 @@ impl LayoutNode {
                     };
 
                     child.computed.position = (x, 0.0);
-                    let child_height = if child.size_flags_vertical.is_fill() {
-                        my_size.height
-                    } else {
-                        child_min.height
-                    };
-                    child.computed.size = Size::new(child_width, child_height);
+                    // 交叉轴（垂直）对齐 Godot fit_child_in_rect：
+                    // 有 FILL → 填满；否则高度=min_size，按 SHRINK_END/CENTER/BEGIN 对齐
+                    let (cy, ch) = cross_axis_align(
+                        my_size.height,
+                        child_min.height,
+                        child.size_flags_vertical,
+                    );
+                    child.computed.position.1 = cy;
+                    child.computed.size = Size::new(child_width, ch);
                     child.layout_children();
                     x += child_width + separation;
                 }
@@ -460,14 +474,14 @@ impl LayoutNode {
                     };
 
                     child.computed.position = (0.0, y);
-                    // 交叉轴：FILL 填满，否则用 min_size
-                    // Godot 里 FILL（不带 EXPAND）在 VBox 的水平方向也填满
-                    let child_width = if child.size_flags_horizontal.is_fill() {
-                        my_size.width
-                    } else {
-                        child_min.width
-                    };
-                    child.computed.size = Size::new(child_width.max(child_min.width), child_height);
+                    // 交叉轴（水平）对齐 Godot fit_child_in_rect
+                    let (cx, cw) = cross_axis_align(
+                        my_size.width,
+                        child_min.width,
+                        child.size_flags_horizontal,
+                    );
+                    child.computed.position.0 = cx;
+                    child.computed.size = Size::new(cw, child_height);
                     child.layout_children();
                     y += child_height + separation;
                 }
@@ -555,6 +569,21 @@ impl LayoutNode {
                         Size::new(0.0, tab_bar_height)
                     }
                 }
+                ContainerType::Foldable { folded, title_height, panel_left, panel_top, panel_right, panel_bottom, .. } => {
+                    // folded=true → min_size = title_height + panel margins（无内容）
+                    // folded=false → min_size = 内容 min_size + title_height + panel margins
+                    if folded {
+                        Size::new(panel_left + panel_right, title_height + panel_top + panel_bottom)
+                    } else if let Some(c) = self.children.first() {
+                        let cm = c.combined_min_size();
+                        Size::new(
+                            cm.width.max(panel_left + panel_right),
+                            cm.height + title_height + panel_top + panel_bottom,
+                        )
+                    } else {
+                        Size::new(panel_left + panel_right, title_height + panel_top + panel_bottom)
+                    }
+                }
             }
         } else {
             self.min_size
@@ -605,6 +634,32 @@ impl LayoutNode {
             child.flatten_into(out, global_pos, &child_path);
         }
     }
+}
+
+/// BoxContainer 交叉轴对齐（移植自 Godot `container.cpp::fit_child_in_rect` 第 121-149 行）。
+///
+/// 输入容器交叉轴尺寸、子节点 min_size、子节点该轴的 size_flags，
+/// 返回 (position, size)。
+///
+/// 规则：
+/// - 有 FILL flag → size = container_size, position = 0（填满）
+/// - 无 FILL flag → size = min_size, position 按 SHRINK_* 对齐：
+///   - SHRINK_END → 靠尾
+///   - SHRINK_CENTER → 居中
+///   - 否则（SHRINK_BEGIN 或无 flag）→ 靠头（0）
+fn cross_axis_align(container_size: f32, min_size: f32, flags: SizeFlags) -> (f32, f32) {
+    if flags.is_fill() {
+        return (0.0, container_size);
+    }
+    let final_size = min_size;
+    let pos = if flags.contains(SizeFlags::SHRINK_END) {
+        container_size - final_size
+    } else if flags.contains(SizeFlags::SHRINK_CENTER) {
+        ((container_size - final_size) / 2.0).floor()
+    } else {
+        0.0
+    };
+    (pos, final_size)
 }
 
 /// SplitContainer 核心算法（移植自 Godot 4.6 `split_container.cpp`）。

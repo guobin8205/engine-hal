@@ -61,6 +61,7 @@ fn control_gallery_containers_detected() {
                 ContainerType::VSplit { .. } => *vbox += 1,
                 ContainerType::Center => {}
                 ContainerType::Tab { .. } => *margin += 1,
+                ContainerType::Foldable { folded: _, .. } => *margin += 1,
             }
         }
         for child in &node.children {
