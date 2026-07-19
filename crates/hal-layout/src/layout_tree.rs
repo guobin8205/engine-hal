@@ -28,6 +28,8 @@ pub struct LayoutNode {
     pub stretch_ratio: f32,
     /// layout_mode（0/1=锚点模式，2=容器模式，3=未指定）
     pub layout_mode: i32,
+    /// 是否可见（hidden 节点在容器布局中跳过）
+    pub visible: bool,
     /// 子节点
     pub children: Vec<LayoutNode>,
     /// 计算结果（布局后填入）
@@ -113,6 +115,7 @@ impl LayoutNode {
             size_flags_vertical: SizeFlags::new(SizeFlags::FILL),
             stretch_ratio: 1.0,
             layout_mode: 0,
+            visible: true,
             children: Vec::new(),
             computed: ComputedLayout::default(),
         }

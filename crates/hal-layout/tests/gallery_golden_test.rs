@@ -27,7 +27,7 @@ struct GoldenNode {
     min_height: f64,
 }
 
-const TOLERANCE: f64 = 50.0; // 大容差看趋势（grow_direction 未实现）
+const TOLERANCE: f64 = 15.0; // VBox theme padding 偏移
 
 /// 递归注入 Godot 提供的真实 min_size 到 LayoutNode 树。
 /// 这样能验证布局算法的正确性（排除 min_size 估算误差的影响）。

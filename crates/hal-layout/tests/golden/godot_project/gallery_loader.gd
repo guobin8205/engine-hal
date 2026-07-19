@@ -46,14 +46,15 @@ func _export():
 func _collect_layout(node: Node, path: String, result: Dictionary):
 	if node is Control:
 		var control = node as Control
-		# 用局部 position + size（相对父节点），排除全局偏移
+		# 用 get_rect()（局部 rect，含 anchor 计算，排除全局偏移）
+		var rect = control.get_rect()
 		var min_size = control.get_combined_minimum_size()
 		result[path] = {
 			"name": node.name,
-			"x": control.position.x,
-			"y": control.position.y,
-			"width": control.size.x,
-			"height": control.size.y,
+			"x": rect.position.x,
+			"y": rect.position.y,
+			"width": rect.size.x,
+			"height": rect.size.y,
 			"min_width": min_size.x,
 			"min_height": min_size.y,
 		}

@@ -120,6 +120,14 @@ fn build_children_recursive(
         };
 
         if is_child {
+            // 跳过 visible=false 的节点（Godot 容器布局中隐藏节点不占空间）
+            let is_visible = match node.props.iter().find(|(k, _)| k == "visible").map(|(_, v)| v) {
+                Some(Variant::Bool(b)) => *b,
+                _ => true,
+            };
+            if !is_visible {
+                continue;
+            }
             let mut child = convert_node(scene, node);
             let child_path = if current_path == root_name {
                 // 根的子节点路径就是 name（不是 root/child，因为 parent="." 不含 root）
@@ -148,6 +156,10 @@ fn convert_node(scene: &SceneData, scene_node: &SceneNode) -> LayoutNode {
     layout.size_flags_vertical = SizeFlags::new(get_int(scene_node, "size_flags_vertical").unwrap_or(1) as u32);
     layout.stretch_ratio = get_f32(scene_node, "size_flags_stretch_ratio").unwrap_or(1.0);
     layout.layout_mode = get_int(scene_node, "layout_mode").unwrap_or(0) as i32;
+    layout.visible = match get_prop(scene_node, "visible") {
+        Some(Variant::Bool(b)) => *b,
+        _ => true,
+    };
 
     layout
 }
