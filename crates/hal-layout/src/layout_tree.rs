@@ -110,7 +110,7 @@ impl LayoutNode {
     }
 
     /// 容器布局：覆盖默认锚点行为，按容器规则强制设置子节点位置/尺寸。
-    fn layout_container(&mut self, container: ContainerType) {
+    pub(crate) fn layout_container(&mut self, container: ContainerType) {
         let my_rect = self.computed;
         let my_size = my_rect.size;
 
@@ -215,21 +215,25 @@ impl LayoutNode {
     }
 
     /// 收集所有节点（自身 + 子孙）的计算结果，扁平化为 Vec。
-    /// 用于把布局结果喂给渲染层（scene_builder）。
+    /// 输出**全局坐标**（累加父节点的 position），用于和 Godot 的 get_global_rect() 对比。
     pub fn flatten(&self) -> Vec<FlatNode> {
         let mut out = Vec::new();
-        self.flatten_into(&mut out);
+        self.flatten_into(&mut out, (0.0, 0.0));
         out
     }
 
-    fn flatten_into(&self, out: &mut Vec<FlatNode>) {
+    fn flatten_into(&self, out: &mut Vec<FlatNode>, parent_global: (f32, f32)) {
+        let global_pos = (
+            parent_global.0 + self.computed.position.0,
+            parent_global.1 + self.computed.position.1,
+        );
         out.push(FlatNode {
             name: self.name.clone(),
-            position: self.computed.position,
+            position: global_pos,
             size: self.computed.size,
         });
         for child in &self.children {
-            child.flatten_into(out);
+            child.flatten_into(out, global_pos);
         }
     }
 }

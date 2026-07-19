@@ -12,3 +12,4 @@ hal-poc = { path = "../hal-poc" }
 
 [dev-dependencies]
 pretty_assertions = "1"
+serde_json = "1"

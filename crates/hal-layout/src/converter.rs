@@ -21,8 +21,6 @@ pub fn build_layout_tree(scene: &SceneData, window_size: Size) -> Option<LayoutN
     let mut root = convert_node(root_scene_node);
 
     // 构建"路径 → 节点" 的映射，用于高效查找父子关系
-    // Godot 的 parent 字段是相对场景根的完整路径（如 "MainPanel/HSplit"）
-    // 子节点的 parent 字段去掉最后一段就是父节点的路径
     let mut path_to_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for (i, node) in scene.nodes.iter().enumerate() {
         let path = node_path(node, &scene.nodes[0].name);
@@ -32,8 +30,19 @@ pub fn build_layout_tree(scene: &SceneData, window_size: Size) -> Option<LayoutN
     // 递归构建子节点
     build_children_recursive(&mut root, &scene.nodes[0].name, scene, &path_to_index);
 
-    // 布局
-    root.layout(window_size);
+    // 根节点直接用 window_size（场景根的 anchor/offset 在 Godot 里被实际窗口尺寸覆盖）
+    root.computed.position = (0.0, 0.0);
+    root.computed.size = window_size;
+
+    // 布局子节点（用根节点的尺寸）
+    if let Some(container) = root.container {
+        root.layout_container(container);
+    } else {
+        let my_size = root.computed.size;
+        for child in &mut root.children {
+            child.layout(my_size);
+        }
+    }
 
     Some(root)
 }
@@ -166,8 +175,8 @@ fn extract_container(node: &SceneNode) -> Option<ContainerType> {
     let separation = get_f32(node, "theme_override_constants/separation").unwrap_or(0.0);
 
     match ty {
-        "HBoxContainer" | "HBox" => Some(ContainerType::HBox { separation }),
-        "VBoxContainer" | "VBox" => Some(ContainerType::VBox { separation }),
+        "HBoxContainer" | "HBox" => Some(ContainerType::HBox { separation: separation.max(4.0) }),
+        "VBoxContainer" | "VBox" => Some(ContainerType::VBox { separation: separation.max(4.0) }),
         "MarginContainer" => {
             let left = get_f32(node, "theme_override_constants/margin_left").unwrap_or(0.0);
             let top = get_f32(node, "theme_override_constants/margin_top").unwrap_or(0.0);

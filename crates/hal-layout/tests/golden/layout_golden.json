@@ -1,0 +1,65 @@
+{
+  "": {
+    "height": 704.0,
+    "name": "Root",
+    "width": 1024.0,
+    "x": 0.0,
+    "y": 0.0
+  },
+  "BottomWide": {
+    "height": 100.0,
+    "name": "BottomWide",
+    "width": 0.0,
+    "x": 0.0,
+    "y": 604.0
+  },
+  "Center": {
+    "height": 50.0,
+    "name": "Center",
+    "width": 100.0,
+    "x": 462.0,
+    "y": 327.0
+  },
+  "FullRect": {
+    "height": 694.0,
+    "name": "FullRect",
+    "width": 1014.0,
+    "x": 5.0,
+    "y": 5.0
+  },
+  "TopLeft": {
+    "height": 50.0,
+    "name": "TopLeft",
+    "width": 100.0,
+    "x": 10.0,
+    "y": 20.0
+  },
+  "VBox": {
+    "height": 704.0,
+    "name": "VBox",
+    "width": 100.0,
+    "x": 200.0,
+    "y": 0.0
+  },
+  "VBox/VItem1": {
+    "height": 50.0,
+    "name": "VItem1",
+    "width": 100.0,
+    "x": 200.0,
+    "y": 0.0
+  },
+  "VBox/VItem2": {
+    "height": 30.0,
+    "name": "VItem2",
+    "width": 100.0,
+    "x": 200.0,
+    "y": 54.0
+  },
+  "VBox/VItem3": {
+    "height": 40.0,
+    "name": "VItem3",
+    "width": 100.0,
+    "x": 200.0,
+    "y": 88.0
+  }
+}

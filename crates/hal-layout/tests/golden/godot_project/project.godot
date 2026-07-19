@@ -1,0 +1,12 @@
+config_version=5
+
+[application]
+config/name="hal-layout-golden-test"
+run/main_scene="res://layout_test.tscn"
+
+[display]
+window/size/viewport_width=960
+window/size/viewport_height=640
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
