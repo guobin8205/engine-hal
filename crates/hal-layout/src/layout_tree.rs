@@ -175,59 +175,135 @@ impl LayoutNode {
                 }
             }
             ContainerType::HSplit { separation, split_offset } => {
-                // HSplitContainer
-                // 当 split_offset > 0：第一个子节点固定 split_offset 宽度
-                // 当 split_offset == 0：和 HBox 一样，按 min_size + EXPAND 瓜分
+                // SplitContainer 独立算法（对齐 Godot _update_default_dragger_positions）
                 let n = self.children.len();
-                if n == 0 {
+                if n == 0 { return; }
+                if n == 1 {
+                    self.children[0].computed.position = (0.0, 0.0);
+                    self.children[0].computed.size = my_size;
+                    self.children[0].layout_children();
                     return;
                 }
 
-                if split_offset > 0.0 {
-                    // 显式 split_offset
-                    let first_w = split_offset;
-                    let rest_w = (my_size.width - first_w - separation * (n as f32 - 1.0)).max(0.0);
-                    let child = &mut self.children[0];
-                    child.computed.position = (0.0, 0.0);
-                    child.computed.size = Size::new(first_w, my_size.height);
-                    child.layout_children();
+                let sep_total = separation * (n as f32 - 1.0);
+
+                // 如果有显式 split_offset，直接用
+                if split_offset != 0.0 {
+                    let first_w = split_offset.max(0.0);
+                    self.children[0].computed.position = (0.0, 0.0);
+                    self.children[0].computed.size = Size::new(first_w, my_size.height);
+                    self.children[0].layout_children();
                     let mut x = first_w + separation;
-                    let rest_per_child = if n > 1 { rest_w / (n as f32 - 1.0) } else { 0.0 };
+                    let rest = if n > 1 { (my_size.width - first_w - sep_total) / (n as f32 - 1.0) } else { 0.0 };
                     for child in self.children.iter_mut().skip(1) {
                         child.computed.position = (x, 0.0);
-                        child.computed.size = Size::new(rest_per_child, my_size.height);
+                        child.computed.size = Size::new(rest, my_size.height);
                         child.layout_children();
-                        x += rest_per_child + separation;
+                        x += rest + separation;
                     }
-                } else {
-                    // split_offset=0 → 和 HBox 一样
-                    self.layout_container(ContainerType::HBox { separation });
+                    return;
+                }
+
+                // 无 split_offset → 用 SplitContainer stretch 算法
+                // 1. 所有子节点先拿 min_size
+                let min_sizes: Vec<f32> = self.children.iter()
+                    .map(|c| c.combined_min_size().width).collect();
+                let min_total: f32 = min_sizes.iter().sum();
+                let stretchable = my_size.width - min_total - sep_total;
+
+                // 2. EXPAND 子节点瓜分 stretchable 空间
+                let total_stretch: f32 = self.children.iter()
+                    .filter(|c| c.size_flags_horizontal.is_expand())
+                    .map(|c| c.stretch_ratio).sum();
+
+                let mut final_sizes = min_sizes.clone();
+                if total_stretch > 0.0 && stretchable > 0.0 {
+                    let last_expand = self.children.iter().enumerate()
+                        .filter(|(_, c)| c.size_flags_horizontal.is_expand())
+                        .map(|(i, _)| i).last();
+                    let mut allocated = 0.0f32;
+                    for (i, child) in self.children.iter().enumerate() {
+                        if child.size_flags_horizontal.is_expand() {
+                            let extra = (stretchable * child.stretch_ratio / total_stretch).floor();
+                            allocated += extra;
+                            final_sizes[i] += extra;
+                            if Some(i) == last_expand {
+                                final_sizes[i] += stretchable - allocated.floor();
+                            }
+                        }
+                    }
+                }
+
+                // 3. 排列
+                let mut x = 0.0f32;
+                for (i, child) in self.children.iter_mut().enumerate() {
+                    child.computed.position = (x, 0.0);
+                    child.computed.size = Size::new(final_sizes[i], my_size.height);
+                    child.layout_children();
+                    x += final_sizes[i] + separation;
                 }
             }
             ContainerType::VSplit { separation, split_offset } => {
                 let n = self.children.len();
-                if n == 0 {
+                if n == 0 { return; }
+                if n == 1 {
+                    self.children[0].computed.position = (0.0, 0.0);
+                    self.children[0].computed.size = my_size;
+                    self.children[0].layout_children();
                     return;
                 }
 
-                if split_offset > 0.0 {
-                    let first_h = split_offset;
-                    let rest_h = (my_size.height - first_h - separation * (n as f32 - 1.0)).max(0.0);
-                    let child = &mut self.children[0];
-                    child.computed.position = (0.0, 0.0);
-                    child.computed.size = Size::new(my_size.width, first_h);
-                    child.layout_children();
+                let sep_total = separation * (n as f32 - 1.0);
+
+                if split_offset != 0.0 {
+                    let first_h = split_offset.max(0.0);
+                    self.children[0].computed.position = (0.0, 0.0);
+                    self.children[0].computed.size = Size::new(my_size.width, first_h);
+                    self.children[0].layout_children();
                     let mut y = first_h + separation;
-                    let rest_per_child = if n > 1 { rest_h / (n as f32 - 1.0) } else { 0.0 };
+                    let rest = if n > 1 { (my_size.height - first_h - sep_total) / (n as f32 - 1.0) } else { 0.0 };
                     for child in self.children.iter_mut().skip(1) {
                         child.computed.position = (0.0, y);
-                        child.computed.size = Size::new(my_size.width, rest_per_child);
+                        child.computed.size = Size::new(my_size.width, rest);
                         child.layout_children();
-                        y += rest_per_child + separation;
+                        y += rest + separation;
                     }
-                } else {
-                    // split_offset=0 → 和 VBox 一样
-                    self.layout_container(ContainerType::VBox { separation });
+                    return;
+                }
+
+                let min_sizes: Vec<f32> = self.children.iter()
+                    .map(|c| c.combined_min_size().height).collect();
+                let min_total: f32 = min_sizes.iter().sum();
+                let stretchable = my_size.height - min_total - sep_total;
+
+                let total_stretch: f32 = self.children.iter()
+                    .filter(|c| c.size_flags_vertical.is_expand())
+                    .map(|c| c.stretch_ratio).sum();
+
+                let mut final_sizes = min_sizes.clone();
+                if total_stretch > 0.0 && stretchable > 0.0 {
+                    let last_expand = self.children.iter().enumerate()
+                        .filter(|(_, c)| c.size_flags_vertical.is_expand())
+                        .map(|(i, _)| i).last();
+                    let mut allocated = 0.0f32;
+                    for (i, child) in self.children.iter().enumerate() {
+                        if child.size_flags_vertical.is_expand() {
+                            let extra = (stretchable * child.stretch_ratio / total_stretch).floor();
+                            allocated += extra;
+                            final_sizes[i] += extra;
+                            if Some(i) == last_expand {
+                                final_sizes[i] += stretchable - allocated.floor();
+                            }
+                        }
+                    }
+                }
+
+                let mut y = 0.0f32;
+                for (i, child) in self.children.iter_mut().enumerate() {
+                    child.computed.position = (0.0, y);
+                    child.computed.size = Size::new(my_size.width, final_sizes[i]);
+                    child.layout_children();
+                    y += final_sizes[i] + separation;
                 }
             }
             ContainerType::Margin { left, top, right, bottom } => {

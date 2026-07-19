@@ -1,25 +1,33 @@
 extends SceneTree
 
+var _frame_count = 0
+var _scene: Node = null
+var _done = false
+
 func _init():
-	var scene = load("res://control_gallery.tscn").instantiate()
-	root.add_child(scene)
+	_scene = load("res://control_gallery.tscn").instantiate()
+	root.add_child(_scene)
 
-	# 强制 Root 尺寸为 960x640
-	# 用 set_deferred 避免 _ready 里的 warning
-	if scene is Control:
-		scene.set_deferred("size", Vector2i(960, 640))
+	if _scene is Control:
+		_scene.set_deferred("size", Vector2i(960, 640))
 
-	await process_frame
-	await process_frame
-	await process_frame
+func _process(delta):
+	if _done:
+		return
+	_frame_count += 1
 
-	# 再次强制（覆盖 tree.gd 可能的修改）
-	if scene is Control:
-		scene.size = Vector2i(960, 640)
-	await process_frame
+	# 等 5 帧让布局稳定
+	if _frame_count == 3:
+		if _scene is Control:
+			_scene.size = Vector2i(960, 640)
 
+	if _frame_count >= 5:
+		_done = true
+		_export()
+
+func _export():
 	var result = {}
-	_collect_layout(scene, "", result)
+	_collect_layout(_scene, "", result)
 
 	var json = JSON.stringify(result, "  ")
 	print("=== GOLDEN_START ===")
@@ -30,7 +38,7 @@ func _init():
 	file.store_string(json)
 	file.close()
 
-	print("=== Root size: ", scene.size, " ===")
+	print("=== Root size: ", _scene.size, " ===")
 	print("=== Nodes: ", result.size(), " ===")
 
 	quit()
@@ -38,14 +46,16 @@ func _init():
 func _collect_layout(node: Node, path: String, result: Dictionary):
 	if node is Control:
 		var control = node as Control
-		# 用 position + size（相对父节点），不用 global_rect
-		# 这样能排除 Godot headless 的全局偏移
+		var rect = control.get_global_rect()
+		var min_size = control.get_combined_minimum_size()
 		result[path] = {
 			"name": node.name,
-			"x": control.position.x,
-			"y": control.position.y,
-			"width": control.size.x,
-			"height": control.size.y,
+			"x": rect.position.x,
+			"y": rect.position.y,
+			"width": rect.size.x,
+			"height": rect.size.y,
+			"min_width": min_size.x,
+			"min_height": min_size.y,
 		}
 	for child in node.get_children():
 		var child_path = path + "/" + child.name if path != "" else child.name
