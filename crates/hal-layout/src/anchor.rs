@@ -104,8 +104,8 @@ pub fn compute_rect(
     ComputedRect {
         x: x_left,
         y: y_top,
-        width: x_right - x_left,
-        height: y_bottom - y_top,
+        width: (x_right - x_left).max(0.0),
+        height: (y_bottom - y_top).max(0.0),
     }
 }
 

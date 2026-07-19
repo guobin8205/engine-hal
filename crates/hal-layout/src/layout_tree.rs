@@ -144,6 +144,8 @@ impl LayoutNode {
     }
 
     /// 容器布局：覆盖默认锚点行为，按容器规则强制设置子节点位置/尺寸。
+    ///
+    /// 所有计算出的 size 都会 clamp 到 >= 0（Godot 行为）。
     pub(crate) fn layout_container(&mut self, container: ContainerType) {
         let my_rect = self.computed;
         let my_size = my_rect.size;
@@ -161,12 +163,12 @@ impl LayoutNode {
                 }
             }
             ContainerType::Margin { left, top, right, bottom } => {
-                // 子节点被裁剪到 margin 内
+                // 子节点被裁剪到 margin 内（clamp 防止负值）
                 if let Some(child) = self.children.first_mut() {
                     child.computed.position = (left, top);
                     child.computed.size = Size::new(
-                        my_size.width - left - right,
-                        my_size.height - top - bottom,
+                        (my_size.width - left - right).max(0.0),
+                        (my_size.height - top - bottom).max(0.0),
                     );
                     child.layout_children();
                 }

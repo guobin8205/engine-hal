@@ -189,6 +189,16 @@ fn extract_container(node: &SceneNode) -> Option<ContainerType> {
             Some(ContainerType::Margin { left, top, right, bottom })
         }
         "CenterContainer" | "Center" => Some(ContainerType::Center),
+        // PanelContainer: 子节点全填满（类似 Margin=0）
+        "PanelContainer" => Some(ContainerType::Margin { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 }),
+        // HSplitContainer: 近似为 HBox（split offset 固定时行为相同）
+        "HSplitContainer" => Some(ContainerType::HBox { separation: separation.max(4.0) }),
+        // VSplitContainer: 近似为 VBox
+        "VSplitContainer" => Some(ContainerType::VBox { separation: separation.max(4.0) }),
+        // TabContainer: 只显示第一个子节点（当前 tab），近似为只有一个子的 VBox
+        "TabContainer" => Some(ContainerType::Margin { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 }),
+        // FoldableContainer: 近似为 VBox（折叠时子节点不可见，但布局上仍占位）
+        "FoldableContainer" => Some(ContainerType::VBox { separation: separation.max(4.0) }),
         _ => None,
     }
 }
