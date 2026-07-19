@@ -73,14 +73,11 @@ fn build_children_recursive(
     for node in &scene.nodes {
         // 判断 node 是否是 current_path 的直接子节点
         let is_child = match &node.parent {
-            None => false, // 根节点，不是任何人的子节点
+            None => false,
             Some(p) if p == "." || p.is_empty() => {
-                // parent="." 表示场景根的直接子节点
-                // current_path 应该是根节点名
                 current_path == root_name
             }
             Some(p) => {
-                // parent 是完整路径，等于 current_path 表示是它的子节点
                 p == current_path
             }
         };
@@ -110,7 +107,6 @@ fn convert_node(scene_node: &SceneNode) -> LayoutNode {
     layout.container = container;
     layout.min_size = min_size;
 
-    // size_flags
     layout.size_flags_horizontal = SizeFlags::new(get_int(scene_node, "size_flags_horizontal").unwrap_or(1) as u32);
     layout.size_flags_vertical = SizeFlags::new(get_int(scene_node, "size_flags_vertical").unwrap_or(1) as u32);
     layout.stretch_ratio = get_f32(scene_node, "size_flags_stretch_ratio").unwrap_or(1.0);

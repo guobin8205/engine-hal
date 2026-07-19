@@ -4,12 +4,18 @@ func _init():
 	var scene = load("res://control_gallery.tscn").instantiate()
 	root.add_child(scene)
 
-	# 强制 Root 尺寸
+	# 强制 Root 尺寸为 960x640
+	# 用 set_deferred 避免 _ready 里的 warning
 	if scene is Control:
-		scene.size = Vector2i(960, 640)
-		scene.set_anchors_preset(Control.PRESET_FULL_RECT)
+		scene.set_deferred("size", Vector2i(960, 640))
 
 	await process_frame
+	await process_frame
+	await process_frame
+
+	# 再次强制（覆盖 tree.gd 可能的修改）
+	if scene is Control:
+		scene.size = Vector2i(960, 640)
 	await process_frame
 
 	var result = {}
@@ -23,6 +29,9 @@ func _init():
 	var file = FileAccess.open("user://gallery_golden.json", FileAccess.WRITE)
 	file.store_string(json)
 	file.close()
+
+	print("=== Root size: ", scene.size, " ===")
+	print("=== Nodes: ", result.size(), " ===")
 
 	quit()
 
