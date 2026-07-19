@@ -97,6 +97,16 @@ void hal_node_set_position(uint64_t handle, float x, float y) {
     }
 }
 
+void hal_node_set_scale(uint64_t handle, float sx, float sy) {
+    cocos2d::Node* node = lookup_node(handle);
+    if (node) {
+        // Cocos 3.x 的 setScale 只接受单个 float（X=Y）
+        // 要 X≠Y 需用 setScaleX + setScaleY
+        node->setScaleX(sx);
+        node->setScaleY(sy);
+    }
+}
+
 void hal_node_add_child(uint64_t parent_handle, uint64_t child_handle) {
     cocos2d::Node* parent = lookup_node(parent_handle);
     cocos2d::Node* child = lookup_node(child_handle);

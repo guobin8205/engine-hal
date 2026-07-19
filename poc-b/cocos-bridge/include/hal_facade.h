@@ -20,6 +20,7 @@ void hal_director_run_with_scene(std::uint64_t scene);
 // ============ 节点通用 ============
 void hal_node_destroy(std::uint64_t handle);
 void hal_node_set_position(std::uint64_t handle, float x, float y);
+void hal_node_set_scale(std::uint64_t handle, float sx, float sy);
 void hal_node_add_child(std::uint64_t parent, std::uint64_t child);
 void hal_node_set_visible(std::uint64_t handle, bool visible);
 void hal_node_set_color(std::uint64_t handle, HalColor color);

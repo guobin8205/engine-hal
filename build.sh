@@ -46,8 +46,9 @@ echo ""
 echo "=== 步骤 5: 拷贝资源到 exe 目录 ==="
 EXE_DIR="$COCOS_DEMO/build/Release"
 mkdir -p "$EXE_DIR/Resources"
-cp "$COCOS_DEMO/Resources/test_scene.tscn" "$EXE_DIR/Resources/"
-# Cocos 模板资源（HelloWorld.png 等）
+# 拷贝所有 .tscn 场景文件
+cp "$COCOS_DEMO/Resources/"*.tscn "$EXE_DIR/Resources/" 2>/dev/null || true
+# Cocos 模板资源（HelloWorld.png / CloseNormal.png 等）
 cp "$COCOS2DX_ROOT/templates/cpp-template-default/Resources/"*.png "$EXE_DIR/Resources/" 2>/dev/null || true
 cp -r "$COCOS2DX_ROOT/templates/cpp-template-default/Resources/fonts" "$EXE_DIR/Resources/" 2>/dev/null || true
 

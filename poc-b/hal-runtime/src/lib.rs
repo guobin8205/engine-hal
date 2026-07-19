@@ -54,6 +54,9 @@ pub mod ffi {
         /// 设置节点位置（相对父节点）。
         fn hal_node_set_position(handle: u64, x: f32, y: f32);
 
+        /// 设置节点缩放。
+        fn hal_node_set_scale(handle: u64, sx: f32, sy: f32);
+
         /// 把 child 加到 parent 下。z_order 默认 0。
         fn hal_node_add_child(parent: u64, child: u64);
 

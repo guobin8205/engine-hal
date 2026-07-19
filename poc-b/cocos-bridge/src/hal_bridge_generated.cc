@@ -4,8 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-// POC-B patch: 让 generated.cc 看到 facade 函数声明。
-// 正式版应该用 build.rs 在生成时自动加这一行。
+// POC-B patch: 让 generated.cc 看到 facade 函数声明
 #include "hal_facade.h"
 
 #ifdef __GNUC__
@@ -67,6 +66,11 @@ void cxxbridge1$197$hal_node_destroy(::std::uint64_t handle) noexcept {
 void cxxbridge1$197$hal_node_set_position(::std::uint64_t handle, float x, float y) noexcept {
   void (*hal_node_set_position$)(::std::uint64_t, float, float) = ::hal_node_set_position;
   hal_node_set_position$(handle, x, y);
+}
+
+void cxxbridge1$197$hal_node_set_scale(::std::uint64_t handle, float sx, float sy) noexcept {
+  void (*hal_node_set_scale$)(::std::uint64_t, float, float) = ::hal_node_set_scale;
+  hal_node_set_scale$(handle, sx, sy);
 }
 
 void cxxbridge1$197$hal_node_add_child(::std::uint64_t parent, ::std::uint64_t child) noexcept {

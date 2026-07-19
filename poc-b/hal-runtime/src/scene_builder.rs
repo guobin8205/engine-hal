@@ -195,6 +195,13 @@ fn apply_common_props(handle: u64, node: &SceneNode) {
         ffi::hal_node_set_position(handle, v.x, v.y);
     }
 
+    // scale: Vector2(x, y)
+    if let Some(Variant::Vector2(v)) =
+        node.props.iter().find(|(k, _)| k == "scale").map(|(_, v)| v)
+    {
+        ffi::hal_node_set_scale(handle, v.x, v.y);
+    }
+
     // visible: bool
     if let Some(Variant::Bool(b)) =
         node.props.iter().find(|(k, _)| k == "visible").map(|(_, v)| v)

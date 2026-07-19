@@ -64,9 +64,11 @@ bool AppDelegate::applicationDidFinishLaunching() {
     // 把当前工作目录显式加为搜索路径
     fileUtils->addSearchPath(".");
 
-    // POC-B2: 从 test_scene.tscn 构建端到端场景
-    // .tscn 由 hal-poc (POC-A) 解析，scene_builder 遍历节点调 C++ facade
-    const char* tscn_path = "test_scene.tscn";
+    // POC-B2: 从 complex_scene.tscn 构建复杂多节点场景
+    // 注意：Rust std::fs 用相对路径，相对 exe 的工作目录
+    // Cocos FileUtils 的搜索路径是 Resources/，但 Rust 不是
+    // 所以这里用 Resources/complex_scene.tscn
+    const char* tscn_path = "Resources/complex_scene.tscn";
     cocos2d::log("POC-B2: 准备加载 %s", tscn_path);
 
     unsigned long long result = hal_runtime_run_tscn_scene(
