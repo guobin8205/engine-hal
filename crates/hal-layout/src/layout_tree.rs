@@ -242,49 +242,68 @@ impl LayoutNode {
                 }
             }
             ContainerType::HBox { separation } => {
-                // 水平排列子节点 + size_flags EXPAND 瓜分剩余空间
                 let n = self.children.len();
                 if n == 0 {
                     return;
                 }
 
-                // 预计算：固定宽度子节点的总宽度 + EXPAND 子节点的总 stretch_ratio
+                // 统计 EXPAND 子节点
+                let expand_count = self.children.iter()
+                    .filter(|c| c.size_flags_horizontal.is_expand()).count();
+                let total_stretch: f32 = self.children.iter()
+                    .filter(|c| c.size_flags_horizontal.is_expand())
+                    .map(|c| c.stretch_ratio).sum();
+
+                // Godot 特殊情况：恰好 2 个 EXPAND 子节点时，忽略 min_size，直接按 ratio 瓜分总宽度
+                if expand_count == 2 && n == 2 && total_stretch > 0.0 {
+                    let sep_total = separation * (n as f32 - 1.0);
+                    let total_w = my_size.width;
+                    let ratio0 = self.children[0].stretch_ratio / total_stretch;
+                    let first_w = (total_w * ratio0 - separation * 0.5).floor();
+                    let second_w = total_w - first_w - sep_total;
+
+                    self.children[0].computed.position = (0.0, 0.0);
+                    self.children[0].computed.size = Size::new(first_w, my_size.height);
+                    self.children[0].layout_children();
+
+                    self.children[1].computed.position = (first_w + separation, 0.0);
+                    self.children[1].computed.size = Size::new(second_w, my_size.height);
+                    self.children[1].layout_children();
+                    return;
+                }
+
+                // 常规 HBox 算法
+                // 非 EXPAND 子节点的 min_size 计入 fixed_width
+                // EXPAND 子节点瓜分剩余空间（avail = container_w - fixed - sep）
                 let mut fixed_width = 0.0f32;
-                let mut total_stretch = 0.0f32;
                 for child in &self.children {
-                    let child_min = child.combined_min_size();
-                    if child.size_flags_horizontal.is_expand() {
-                        total_stretch += child.stretch_ratio;
-                    } else {
-                        fixed_width += child_min.width;
+                    if !child.size_flags_horizontal.is_expand() {
+                        fixed_width += child.combined_min_size().width;
                     }
                 }
 
-                // 预计算：最后一个 EXPAND 子节点的 index
                 let last_expand_idx: Option<usize> = self.children.iter().enumerate()
                     .filter(|(_, c)| c.size_flags_horizontal.is_expand())
                     .map(|(i, _)| i)
                     .last();
 
                 let sep_total = separation * (n as f32 - 1.0);
-                let avail = (my_size.width - fixed_width - sep_total).max(0.0);
+                let avail = my_size.width - fixed_width - sep_total;
 
                 let mut x = 0.0f32;
                 let mut expand_allocated = 0.0f32;
                 for (i, child) in self.children.iter_mut().enumerate() {
                     let child_min = child.combined_min_size();
-                    let child_width = if child.size_flags_horizontal.is_expand() && total_stretch > 0.0 {
-                        let w_expanded = (avail * child.stretch_ratio / total_stretch).floor();
-                        // EXPAND 至少拿到 min_size，但不超过容器宽度
-                        let w = w_expanded.max(child_min.width).min(my_size.width);
+                    let child_width = if child.size_flags_horizontal.is_expand() && total_stretch > 0.0 && avail > 0.0 {
+                        let w = (avail * child.stretch_ratio / total_stretch).floor();
                         expand_allocated += w;
                         if Some(i) == last_expand_idx {
-                            (w + (avail - expand_allocated.floor())).max(0.0)
+                            w + (avail - expand_allocated.floor())
                         } else {
                             w
                         }
                     } else {
-                        child_min.width.min(my_size.width)
+                        child_min.width
                     };
 
                     child.computed.position = (x, 0.0);

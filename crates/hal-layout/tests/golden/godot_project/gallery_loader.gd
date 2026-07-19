@@ -38,13 +38,14 @@ func _init():
 func _collect_layout(node: Node, path: String, result: Dictionary):
 	if node is Control:
 		var control = node as Control
-		var rect = control.get_global_rect()
+		# 用 position + size（相对父节点），不用 global_rect
+		# 这样能排除 Godot headless 的全局偏移
 		result[path] = {
 			"name": node.name,
-			"x": rect.position.x,
-			"y": rect.position.y,
-			"width": rect.size.x,
-			"height": rect.size.y,
+			"x": control.position.x,
+			"y": control.position.y,
+			"width": control.size.x,
+			"height": control.size.y,
 		}
 	for child in node.get_children():
 		var child_path = path + "/" + child.name if path != "" else child.name
