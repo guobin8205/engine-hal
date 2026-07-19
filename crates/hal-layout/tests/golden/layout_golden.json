@@ -27,6 +27,34 @@
     "x": 5.0,
     "y": 5.0
   },
+  "HBox": {
+    "height": 60.0,
+    "name": "HBox",
+    "width": 960.0,
+    "x": 0.0,
+    "y": 580.0
+  },
+  "HBox/HExpand": {
+    "height": 60.0,
+    "name": "HExpand",
+    "width": 290.0,
+    "x": 84.0,
+    "y": 580.0
+  },
+  "HBox/HExpand2x": {
+    "height": 60.0,
+    "name": "HExpand2x",
+    "width": 582.0,
+    "x": 378.0,
+    "y": 580.0
+  },
+  "HBox/HFixed": {
+    "height": 60.0,
+    "name": "HFixed",
+    "width": 80.0,
+    "x": 0.0,
+    "y": 580.0
+  },
   "TopLeft": {
     "height": 50.0,
     "name": "TopLeft",

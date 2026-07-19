@@ -60,3 +60,23 @@ custom_minimum_size = Vector2(100, 30)
 
 [node name="VItem3" type="ColorRect" parent="VBox"]
 custom_minimum_size = Vector2(100, 40)
+
+[node name="HBox" type="HBoxContainer" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_bottom = 1.0
+anchor_right = 1.0
+offset_top = -60.0
+
+[node name="HFixed" type="ColorRect" parent="HBox"]
+custom_minimum_size = Vector2(80, 40)
+
+[node name="HExpand" type="ColorRect" parent="HBox"]
+custom_minimum_size = Vector2(50, 40)
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="HExpand2x" type="ColorRect" parent="HBox"]
+custom_minimum_size = Vector2(50, 40)
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0

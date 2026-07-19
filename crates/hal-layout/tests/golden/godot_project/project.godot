@@ -1,12 +1,24 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
+
 config/name="hal-layout-golden-test"
 run/main_scene="res://layout_test.tscn"
+config/features=PackedStringArray("4.6")
 
 [display]
+
 window/size/viewport_width=960
 window/size/viewport_height=640
 
 [rendering]
+
 renderer/rendering_method="gl_compatibility"

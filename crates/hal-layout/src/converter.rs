@@ -6,7 +6,7 @@
 use hal_poc::{SceneData, SceneNode, Variant};
 
 use crate::anchor::{AnchorsPreset, Offsets, Preset};
-use crate::layout_tree::{ContainerType, LayoutNode, Size};
+use crate::layout_tree::{ContainerType, LayoutNode, Size, SizeFlags};
 
 /// 从 SceneData 构建 LayoutNode 树（场景根）。
 ///
@@ -109,6 +109,12 @@ fn convert_node(scene_node: &SceneNode) -> LayoutNode {
     let mut layout = LayoutNode::new(&scene_node.name, anchors, offsets);
     layout.container = container;
     layout.min_size = min_size;
+
+    // size_flags
+    layout.size_flags_horizontal = SizeFlags::new(get_int(scene_node, "size_flags_horizontal").unwrap_or(1) as u32);
+    layout.size_flags_vertical = SizeFlags::new(get_int(scene_node, "size_flags_vertical").unwrap_or(1) as u32);
+    layout.stretch_ratio = get_f32(scene_node, "size_flags_stretch_ratio").unwrap_or(1.0);
+
     layout
 }
 

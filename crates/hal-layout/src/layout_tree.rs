@@ -21,10 +21,41 @@ pub struct LayoutNode {
     pub min_size: Size,
     /// 容器类型（None 表示普通节点，自算布局）
     pub container: Option<ContainerType>,
+    /// size_flags（Godot 容器内填充策略）
+    pub size_flags_horizontal: SizeFlags,
+    pub size_flags_vertical: SizeFlags,
+    /// 拉伸比例（EXPAND 时瓜分剩余空间的权重）
+    pub stretch_ratio: f32,
     /// 子节点
     pub children: Vec<LayoutNode>,
     /// 计算结果（布局后填入）
     pub computed: ComputedLayout,
+}
+
+/// Godot 的 SizeFlags（bit flag）。
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
+pub struct SizeFlags {
+    pub bits: u32,
+}
+
+impl SizeFlags {
+    pub const FILL: u32 = 1;
+    pub const EXPAND: u32 = 2;
+    pub const SHRINK_CENTER: u32 = 4;
+    pub const SHRINK_END: u32 = 8;
+
+    pub fn new(bits: u32) -> Self {
+        SizeFlags { bits }
+    }
+    pub fn contains(&self, flag: u32) -> bool {
+        self.bits & flag != 0
+    }
+    pub fn is_fill(&self) -> bool {
+        self.contains(Self::FILL)
+    }
+    pub fn is_expand(&self) -> bool {
+        self.contains(Self::EXPAND)
+    }
 }
 
 /// 尺寸（宽高）。
@@ -72,6 +103,9 @@ impl LayoutNode {
             offsets,
             min_size: Size::ZERO,
             container: None,
+            size_flags_horizontal: SizeFlags::new(SizeFlags::FILL),
+            size_flags_vertical: SizeFlags::new(SizeFlags::FILL),
+            stretch_ratio: 1.0,
             children: Vec::new(),
             computed: ComputedLayout::default(),
         }
@@ -138,25 +172,110 @@ impl LayoutNode {
                 }
             }
             ContainerType::HBox { separation } => {
-                // 水平排列子节点
-                let mut x = 0.0f32;
-                for child in &mut self.children {
+                // 水平排列子节点 + size_flags EXPAND 瓜分剩余空间
+                let n = self.children.len();
+                if n == 0 {
+                    return;
+                }
+
+                // 预计算：固定宽度子节点的总宽度 + EXPAND 子节点的总 stretch_ratio
+                let mut fixed_width = 0.0f32;
+                let mut total_stretch = 0.0f32;
+                for child in &self.children {
                     let child_min = child.combined_min_size();
+                    if child.size_flags_horizontal.is_expand() {
+                        total_stretch += child.stretch_ratio;
+                    } else {
+                        fixed_width += child_min.width;
+                    }
+                }
+
+                // 预计算：最后一个 EXPAND 子节点的 index
+                let last_expand_idx: Option<usize> = self.children.iter().enumerate()
+                    .filter(|(_, c)| c.size_flags_horizontal.is_expand())
+                    .map(|(i, _)| i)
+                    .last();
+
+                let sep_total = separation * (n as f32 - 1.0);
+                let avail = (my_size.width - fixed_width - sep_total).max(0.0);
+
+                let mut x = 0.0f32;
+                let mut expand_allocated = 0.0f32;
+                for (i, child) in self.children.iter_mut().enumerate() {
+                    let child_min = child.combined_min_size();
+                    let child_width = if child.size_flags_horizontal.is_expand() && total_stretch > 0.0 {
+                        let w = (avail * child.stretch_ratio / total_stretch).floor();
+                        expand_allocated += w;
+                        if Some(i) == last_expand_idx {
+                            w + (avail - expand_allocated.floor())
+                        } else {
+                            w
+                        }
+                    } else {
+                        child_min.width
+                    };
+
                     child.computed.position = (x, 0.0);
-                    child.computed.size = Size::new(child_min.width, my_size.height);
+                    let child_height = if child.size_flags_vertical.is_fill() {
+                        my_size.height
+                    } else {
+                        child_min.height
+                    };
+                    child.computed.size = Size::new(child_width, child_height);
                     child.layout_children();
-                    x += child_min.width + separation;
+                    x += child_width + separation;
                 }
             }
             ContainerType::VBox { separation } => {
-                // 垂直排列子节点
-                let mut y = 0.0f32;
-                for child in &mut self.children {
+                let n = self.children.len();
+                if n == 0 {
+                    return;
+                }
+
+                let mut fixed_height = 0.0f32;
+                let mut total_stretch = 0.0f32;
+                for child in &self.children {
                     let child_min = child.combined_min_size();
+                    if child.size_flags_vertical.is_expand() {
+                        total_stretch += child.stretch_ratio;
+                    } else {
+                        fixed_height += child_min.height;
+                    }
+                }
+
+                let last_expand_idx: Option<usize> = self.children.iter().enumerate()
+                    .filter(|(_, c)| c.size_flags_vertical.is_expand())
+                    .map(|(i, _)| i)
+                    .last();
+
+                let sep_total = separation * (n as f32 - 1.0);
+                let avail = (my_size.height - fixed_height - sep_total).max(0.0);
+
+                let mut y = 0.0f32;
+                let mut expand_allocated = 0.0f32;
+                for (i, child) in self.children.iter_mut().enumerate() {
+                    let child_min = child.combined_min_size();
+                    let child_height = if child.size_flags_vertical.is_expand() && total_stretch > 0.0 {
+                        let h = (avail * child.stretch_ratio / total_stretch).floor();
+                        expand_allocated += h;
+                        if Some(i) == last_expand_idx {
+                            h + (avail - expand_allocated.floor())
+                        } else {
+                            h
+                        }
+                    } else {
+                        child_min.height
+                    };
+
                     child.computed.position = (0.0, y);
-                    child.computed.size = Size::new(my_size.width, child_min.height);
+                    let child_width = if child.size_flags_horizontal.is_fill() {
+                        my_size.width
+                    } else {
+                        child_min.width
+                    };
+                    child.computed.size = Size::new(child_width, child_height);
                     child.layout_children();
-                    y += child_min.height + separation;
+                    y += child_height + separation;
                 }
             }
         }
