@@ -137,10 +137,12 @@ fn create_node(
         "Sprite" | "Sprite2D" => create_sprite_node(node, ext_resources)?,
         "Label" => create_label_node(node)?,
         // 所有 Control 类型的节点都用 ColorRect 可视化布局
-        _ => create_control_placeholder(node, layout_sizes)?,
+        _ => create_control_placeholder(node, layout_map, layout_sizes)?,
     };
 
-    if handle != 0 {
+    // Sprite/Label 走 apply_common_props（它们用 Godot position Y 翻转）
+    // ColorRect 已经在 create_control_placeholder 里设了正确的 LayerColor 坐标
+    if handle != 0 && (node_type == "Sprite" || node_type == "Sprite2D" || node_type == "Label") {
         apply_common_props(handle, node, layout_map);
     }
 
@@ -148,30 +150,28 @@ fn create_node(
 }
 
 /// 为 Control 类型节点创建彩色矩形占位（可视化布局结果）。
-/// 不同类型用不同颜色区分：
-///   - Container（HBox/VBox/Margin/Panel/Split/Tab）→ 半透明蓝
-///   - Label/RichTextLabel → 半透明绿
-///   - Button/CheckBox → 半透明橙
-///   - 其他 Control → 半透明灰
+/// 注意：ColorRect 直接在这里设 position（不走 apply_common_props），
+/// 因为 LayerColor 的坐标系和 Sprite/Label 不同。
 fn create_control_placeholder(
     node: &SceneNode,
+    layout_positions: &HashMap<String, (f32, f32)>,
     layout_sizes: &HashMap<String, (f32, f32)>,
 ) -> Option<u64> {
     let &(w, h) = layout_sizes.get(&node.name)?;
     if w < 1.0 || h < 1.0 {
-        return None; // 太小的节点不显示
+        return None;
     }
 
     let ty = node.r#type.as_deref().unwrap_or("");
     let color = match ty {
         "VBoxContainer" | "HBoxContainer" | "MarginContainer" | "PanelContainer"
         | "HSplitContainer" | "VSplitContainer" | "TabContainer" | "FoldableContainer"
-        | "CenterContainer" => ffi::HalColor::new(0.2, 0.4, 0.8, 0.3), // 半透明蓝
-        "Label" | "RichTextLabel" => ffi::HalColor::new(0.2, 0.8, 0.3, 0.3), // 半透明绿
+        | "CenterContainer" => ffi::HalColor::new(0.2, 0.4, 0.8, 0.3),
+        "Label" | "RichTextLabel" => ffi::HalColor::new(0.2, 0.8, 0.3, 0.3),
         "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton"
-        | "SpinBox" | "LineEdit" | "TextEdit" | "CodeEdit" => ffi::HalColor::new(0.8, 0.5, 0.2, 0.3), // 半透明橙
-        "ColorRect" | "TextureRect" | "TextureProgressBar" => ffi::HalColor::new(0.5, 0.5, 0.5, 0.5), // 半透明灰
-        _ => ffi::HalColor::new(0.3, 0.3, 0.3, 0.15), // 极淡灰（Control 基类等）
+        | "SpinBox" | "LineEdit" | "TextEdit" | "CodeEdit" => ffi::HalColor::new(0.8, 0.5, 0.2, 0.3),
+        "ColorRect" | "TextureRect" | "TextureProgressBar" => ffi::HalColor::new(0.5, 0.5, 0.5, 0.5),
+        _ => ffi::HalColor::new(0.3, 0.3, 0.3, 0.15),
     };
 
     let handle = ffi::hal_color_rect_create(w, h, color);
@@ -179,8 +179,19 @@ fn create_control_placeholder(
         return None;
     }
 
-    // 设置锚点为左下角（LayerColor 默认就是，但 Godot 坐标用左上角）
-    // LayerColor 的 position 是左下角位置
+    // 直接设 position（LayerColor 左下角坐标系）
+    // Godot: 左上角原点，Y 向下 → Cocos LayerColor: 左下角原点，Y 向上
+    // LayerColor position = 左下角
+    // cocos_y = WINDOW_HEIGHT - godot_y - height
+    if let Some(&(godot_x, godot_y)) = layout_positions.get(&node.name) {
+        let cocos_y = WINDOW_HEIGHT - godot_y - h;
+        ffi::hal_node_set_position(handle, godot_x, cocos_y);
+        eprintln!(
+            "POC-ColorRect: {} type={} godot=({:.0},{:.0}) size=({:.0},{:.0}) → Cocos ({:.0},{:.0})",
+            node.name, ty, godot_x, godot_y, w, h, godot_x, cocos_y
+        );
+    }
+
     Some(handle)
 }
 
@@ -242,12 +253,19 @@ fn apply_common_props(
         // hal-layout 输出 Godot 坐标系（左上原点，Y 向下），转 Cocos（左下原点，Y 向上）
         let cocos_y = WINDOW_HEIGHT - y;
         ffi::hal_node_set_position(handle, x, cocos_y);
+        eprintln!(
+            "POC-Pos[layout]: {} → Cocos ({:.0}, {:.0})",
+            node.name, x, cocos_y
+        );
     } else if let Some(Variant::Vector2(v)) =
         node.props.iter().find(|(k, _)| k == "position").map(|(_, v)| v)
     {
-        // fallback：直接用 Godot position（POC-B 的行为）
         let cocos_y = WINDOW_HEIGHT - v.y;
         ffi::hal_node_set_position(handle, v.x, cocos_y);
+        eprintln!(
+            "POC-Pos[props]: {} → Cocos ({:.0}, {:.0})",
+            node.name, v.x, cocos_y
+        );
     }
 
     // scale: Vector2(x, y)
