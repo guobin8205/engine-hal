@@ -1,0 +1,14 @@
+[package]
+name = "hal-layout"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Engine-HAL UI layout: 把 Godot Control 布局翻译/重算为引擎无关的 position+size"
+
+[dependencies]
+glam = { version = "0.33", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+hal-poc = { path = "../hal-poc" }
+
+[dev-dependencies]
+pretty_assertions = "1"

@@ -1,0 +1,339 @@
+//! 布局树：从 .tscn 解析结果构建，递归计算每个节点的最终 position+size。
+//!
+//! 设计：
+//! - 纯计算（无 I/O），便于单元测试
+//! - 引擎无关：结果只是 `ComputedLayout`（position + size）
+//! - 两层：锚点节点（自算）+ 容器节点（递归布局子节点）
+
+use serde::{Deserialize, Serialize};
+
+use crate::anchor::{compute_rect, AnchorsPreset, ComputedRect, Offsets};
+
+/// 布局节点：从 SceneNode 转换而来，带布局相关信息。
+#[derive(Clone, Debug)]
+pub struct LayoutNode {
+    /// 节点名（调试用）
+    pub name: String,
+    /// 锚点 + 偏移
+    pub anchors: AnchorsPreset,
+    pub offsets: Offsets,
+    /// 最小尺寸（Container 计算时用）
+    pub min_size: Size,
+    /// 容器类型（None 表示普通节点，自算布局）
+    pub container: Option<ContainerType>,
+    /// 子节点
+    pub children: Vec<LayoutNode>,
+    /// 计算结果（布局后填入）
+    pub computed: ComputedLayout,
+}
+
+/// 尺寸（宽高）。
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
+pub struct Size {
+    pub width: f32,
+    pub height: f32,
+}
+
+impl Size {
+    pub const ZERO: Size = Size { width: 0.0, height: 0.0 };
+    pub fn new(w: f32, h: f32) -> Self {
+        Size { width: w, height: h }
+    }
+}
+
+/// 容器类型（对应 Godot Container 家族）。
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ContainerType {
+    /// HBoxContainer：水平排列
+    HBox { separation: f32 },
+    /// VBoxContainer：垂直排列
+    VBox { separation: f32 },
+    /// MarginContainer：四边留白
+    Margin { left: f32, top: f32, right: f32, bottom: f32 },
+    /// CenterContainer：子节点居中
+    Center,
+}
+
+/// 节点的计算结果（Godot 坐标系：左上角原点，Y 向下）。
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
+pub struct ComputedLayout {
+    /// 相对父节点的位置
+    pub position: (f32, f32),
+    /// 最终尺寸
+    pub size: Size,
+}
+
+impl LayoutNode {
+    /// 创建一个普通的锚点节点（非容器）。
+    pub fn new(name: impl Into<String>, anchors: AnchorsPreset, offsets: Offsets) -> Self {
+        LayoutNode {
+            name: name.into(),
+            anchors,
+            offsets,
+            min_size: Size::ZERO,
+            container: None,
+            children: Vec::new(),
+            computed: ComputedLayout::default(),
+        }
+    }
+
+    /// 添加子节点。
+    pub fn add_child(&mut self, child: LayoutNode) {
+        self.children.push(child);
+    }
+
+    /// 递归布局：给定父节点尺寸，计算自身 + 所有子节点的最终 position+size。
+    ///
+    /// 这是布局系统的核心入口。
+    pub fn layout(&mut self, parent_size: Size) {
+        // 1. 计算自己的锚点矩形（相对父节点）
+        let rect = compute_rect(
+            parent_size.width,
+            parent_size.height,
+            &self.anchors,
+            &self.offsets,
+        );
+        self.computed.position = (rect.x, rect.y);
+        self.computed.size = Size::new(rect.width, rect.height);
+
+        // 2. 如果是容器，按容器规则布局子节点
+        //    否则子节点按锚点相对自己的尺寸布局
+        if let Some(container) = self.container {
+            self.layout_container(container);
+        } else {
+            // 非容器：子节点直接用自身尺寸作为父尺寸做锚点布局
+            let my_size = self.computed.size;
+            for child in &mut self.children {
+                child.layout(my_size);
+            }
+        }
+    }
+
+    /// 容器布局：覆盖默认锚点行为，按容器规则强制设置子节点位置/尺寸。
+    fn layout_container(&mut self, container: ContainerType) {
+        let my_rect = self.computed;
+        let my_size = my_rect.size;
+
+        match container {
+            ContainerType::Center => {
+                // 子节点居中（假设唯一子节点，否则按 Godot 行为只布局第一个）
+                if let Some(child) = self.children.first_mut() {
+                    let child_min = child.combined_min_size();
+                    let cx = (my_size.width - child_min.width) / 2.0;
+                    let cy = (my_size.height - child_min.height) / 2.0;
+                    child.computed.position = (cx, cy);
+                    child.computed.size = child_min;
+                    child.layout_children();
+                }
+            }
+            ContainerType::Margin { left, top, right, bottom } => {
+                // 子节点被裁剪到 margin 内
+                if let Some(child) = self.children.first_mut() {
+                    child.computed.position = (left, top);
+                    child.computed.size = Size::new(
+                        my_size.width - left - right,
+                        my_size.height - top - bottom,
+                    );
+                    child.layout_children();
+                }
+            }
+            ContainerType::HBox { separation } => {
+                // 水平排列子节点
+                let mut x = 0.0f32;
+                for child in &mut self.children {
+                    let child_min = child.combined_min_size();
+                    child.computed.position = (x, 0.0);
+                    child.computed.size = Size::new(child_min.width, my_size.height);
+                    child.layout_children();
+                    x += child_min.width + separation;
+                }
+            }
+            ContainerType::VBox { separation } => {
+                // 垂直排列子节点
+                let mut y = 0.0f32;
+                for child in &mut self.children {
+                    let child_min = child.combined_min_size();
+                    child.computed.position = (0.0, y);
+                    child.computed.size = Size::new(my_size.width, child_min.height);
+                    child.layout_children();
+                    y += child_min.height + separation;
+                }
+            }
+        }
+    }
+
+    /// 递归布局子节点（用自己的当前尺寸作为父尺寸）。
+    fn layout_children(&mut self) {
+        let my_size = self.computed.size;
+        for child in &mut self.children {
+            child.layout(my_size);
+        }
+    }
+
+    /// 计算节点的最小尺寸（递归）。
+    /// 普通节点返回 min_size；容器节点累加子节点最小尺寸。
+    pub fn combined_min_size(&self) -> Size {
+        if let Some(container) = self.container {
+            match container {
+                ContainerType::HBox { separation } => {
+                    let n = self.children.len();
+                    let total: Size = self.children.iter().fold(Size::ZERO, |acc, c| {
+                        let cm = c.combined_min_size();
+                        Size::new(acc.width + cm.width, acc.height.max(cm.height))
+                    });
+                    let sep_total = if n > 0 { separation * (n as f32 - 1.0) } else { 0.0 };
+                    Size::new(total.width + sep_total, total.height)
+                }
+                ContainerType::VBox { separation } => {
+                    let n = self.children.len();
+                    let total: Size = self.children.iter().fold(Size::ZERO, |acc, c| {
+                        let cm = c.combined_min_size();
+                        Size::new(acc.width.max(cm.width), acc.height + cm.height)
+                    });
+                    let sep_total = if n > 0 { separation * (n as f32 - 1.0) } else { 0.0 };
+                    Size::new(total.width, total.height + sep_total)
+                }
+                ContainerType::Margin { left, top, right, bottom } => {
+                    if let Some(c) = self.children.first() {
+                        let cm = c.combined_min_size();
+                        Size::new(cm.width + left + right, cm.height + top + bottom)
+                    } else {
+                        Size::new(left + right, top + bottom)
+                    }
+                }
+                ContainerType::Center => {
+                    if let Some(c) = self.children.first() {
+                        c.combined_min_size()
+                    } else {
+                        Size::ZERO
+                    }
+                }
+            }
+        } else {
+            self.min_size
+        }
+    }
+
+    /// 收集所有节点（自身 + 子孙）的计算结果，扁平化为 Vec。
+    /// 用于把布局结果喂给渲染层（scene_builder）。
+    pub fn flatten(&self) -> Vec<FlatNode> {
+        let mut out = Vec::new();
+        self.flatten_into(&mut out);
+        out
+    }
+
+    fn flatten_into(&self, out: &mut Vec<FlatNode>) {
+        out.push(FlatNode {
+            name: self.name.clone(),
+            position: self.computed.position,
+            size: self.computed.size,
+        });
+        for child in &self.children {
+            child.flatten_into(out);
+        }
+    }
+}
+
+/// 扁平化的布局结果（用于喂给 scene_builder / Cocos）。
+#[derive(Clone, Debug, PartialEq)]
+pub struct FlatNode {
+    pub name: String,
+    pub position: (f32, f32),
+    pub size: Size,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::anchor::Preset;
+
+    #[test]
+    fn anchor_node_layout() {
+        // 一个 FullRect 节点填满 960x640
+        let mut node = LayoutNode::new("root", Preset::FullRect.to_anchors(), Offsets {
+            offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
+        });
+        node.layout(Size::new(960.0, 640.0));
+        assert_eq!(node.computed.position, (0.0, 0.0));
+        assert_eq!(node.computed.size, Size::new(960.0, 640.0));
+    }
+
+    #[test]
+    fn child_anchor_layout() {
+        // 父 FullRect 960x640，子 Center 100x50 居中
+        let mut root = LayoutNode::new("root", Preset::FullRect.to_anchors(), Offsets {
+            offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
+        });
+        let mut child = LayoutNode::new("center", Preset::Center.to_anchors(), Offsets {
+            offset_left: -50.0, offset_top: -25.0, offset_right: 50.0, offset_bottom: 25.0
+        });
+        root.add_child(child);
+        root.layout(Size::new(960.0, 640.0));
+
+        // 子节点应该居中：(960-100)/2 = 430, (640-50)/2 = 295
+        assert_eq!(root.children[0].computed.position, (430.0, 295.0));
+        assert_eq!(root.children[0].computed.size, Size::new(100.0, 50.0));
+    }
+
+    #[test]
+    fn vbox_layout() {
+        // VBox 容器里放 3 个固定高度的子节点
+        let mut root = LayoutNode::new("vbox", Preset::FullRect.to_anchors(), Offsets {
+            offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
+        });
+        root.container = Some(ContainerType::VBox { separation: 10.0 });
+
+        // 3 个子节点，高度分别为 50/30/40
+        for (i, h) in [50.0, 30.0, 40.0].iter().enumerate() {
+            let mut c = LayoutNode::new(format!("child{}", i), Preset::TopLeft.to_anchors(), Offsets {
+                offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: -*h
+            });
+            c.min_size = Size::new(100.0, *h);
+            root.add_child(c);
+        }
+
+        root.layout(Size::new(960.0, 640.0));
+
+        // 第一个在 y=0，第二个在 y=50+10=60，第三个在 y=60+30+10=100
+        assert_eq!(root.children[0].computed.position, (0.0, 0.0));
+        assert_eq!(root.children[0].computed.size, Size::new(960.0, 50.0));
+        assert_eq!(root.children[1].computed.position, (0.0, 60.0));
+        assert_eq!(root.children[1].computed.size, Size::new(960.0, 30.0));
+        assert_eq!(root.children[2].computed.position, (0.0, 100.0));
+        assert_eq!(root.children[2].computed.size, Size::new(960.0, 40.0));
+    }
+
+    #[test]
+    fn margin_container_layout() {
+        // Margin 容器：margin 10/20/30/40
+        let mut root = LayoutNode::new("margin", Preset::FullRect.to_anchors(), Offsets {
+            offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
+        });
+        root.container = Some(ContainerType::Margin { left: 10.0, top: 20.0, right: 30.0, bottom: 40.0 });
+        root.add_child(LayoutNode::new("content", Preset::FullRect.to_anchors(), Offsets {
+            offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
+        }));
+
+        root.layout(Size::new(960.0, 640.0));
+
+        // 子节点应该被裁剪到 margin 内
+        assert_eq!(root.children[0].computed.position, (10.0, 20.0));
+        assert_eq!(root.children[0].computed.size, Size::new(960.0 - 10.0 - 30.0, 640.0 - 20.0 - 40.0));
+    }
+
+    #[test]
+    fn flatten_collects_all_nodes() {
+        let mut root = LayoutNode::new("root", Preset::FullRect.to_anchors(), Offsets {
+            offset_left: 0.0, offset_top: 0.0, offset_right: 0.0, offset_bottom: 0.0
+        });
+        root.add_child(LayoutNode::new("c1", Preset::Center.to_anchors(), Offsets {
+            offset_left: -50.0, offset_top: -25.0, offset_right: 50.0, offset_bottom: 25.0
+        }));
+        root.layout(Size::new(960.0, 640.0));
+
+        let flat = root.flatten();
+        assert_eq!(flat.len(), 2);
+        assert_eq!(flat[0].name, "root");
+        assert_eq!(flat[1].name, "c1");
+    }
+}

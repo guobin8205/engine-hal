@@ -151,6 +151,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hal-layout"
+version = "0.1.0"
+dependencies = [
+ "glam",
+ "hal-poc",
+ "pretty_assertions",
+ "serde",
+]
+
+[[package]]
 name = "hal-poc"
 version = "0.1.0"
 dependencies = [
