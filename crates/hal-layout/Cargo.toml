@@ -9,6 +9,7 @@ description = "Engine-HAL UI layout: 把 Godot Control 布局翻译/重算为引
 glam = { version = "0.33", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 hal-poc = { path = "../hal-poc" }
+hal-font = { path = "../hal-font" }
 
 [dev-dependencies]
 pretty_assertions = "1"

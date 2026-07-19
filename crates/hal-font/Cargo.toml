@@ -1,0 +1,10 @@
+[package]
+name = "hal-font"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Engine-HAL: 字体度量（用 Godot 默认 OpenSans 字体算文字宽度，对齐 Godot 的 min_size）"
+
+[dependencies]
+# fontdue: 纯 Rust 字体度量库，不需要 FreeType
+fontdue = "0.9"

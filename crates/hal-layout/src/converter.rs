@@ -394,32 +394,27 @@ fn extract_min_size(node: &SceneNode) -> Size {
     let ty = node.r#type.as_deref().unwrap_or("");
 
     match ty {
-        // Label: min_size = 文字尺寸估算
-        // min_width = chars × font_size × 0.52（默认字体平均字符宽度系数，含变宽字体）
-        // min_height = font_size × 1.25（行高，含行间距）
-        // 多行 text（含 \n）取最长行，高度 × 行数
+        // Label: min_size = 真实字体度量（hal-font 用 Godot 默认 OpenSans SemiBold）
+        // min_width = 最长行的像素宽度（fontdue advance width 之和）
+        // min_height = font_size × 1.25（行高，含行间距）× 行数
         "Label" => {
             let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
             let text = get_string_prop(node, "text").unwrap_or_default();
-            let char_w = font_size * 0.52;
-            let line_h = font_size * 1.25;
-            let lines: Vec<&str> = text.split('\n').collect();
-            let max_chars = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0) as f32;
-            let height = line_h * lines.len() as f32;
-            Size::new(max_chars * char_w, height)
+            let text_w = hal_font::text_max_line_width(&text, font_size);
+            let line_h = hal_font::line_height(font_size);
+            let line_count = text.split('\n').count().max(1);
+            Size::new(text_w, line_h * line_count as f32)
         }
         // RichTextLabel: min_size 默认很小（(1,0)），由容器分配尺寸
         // RichTextLabel 的 autofill 行为和 Label 不同，min_size 不基于文字长度
         "RichTextLabel" => Size::new(1.0, 0.0),
-        // Button/CheckBox/CheckButton/LinkButton: 根据 text 估算 + 主题 padding
-        // min_width = chars × font_size × 0.48 + padding
-        // 系数 0.48 偏保守（默认字体实测 0.48-0.55），避免过估算撑开容器
+        // Button/CheckBox/CheckButton/LinkButton: 文字宽度（字体度量）+ 主题 padding
+        // padding 来自 Godot 默认主题的 StyleBox 内容边距（实测）
         "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton"
         | "MenuButton" | "OptionButton" => {
             let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
             let text = get_string_prop(node, "text").unwrap_or_default();
-            let char_w = font_size * 0.48;
-            let text_w = text.chars().count() as f32 * char_w;
+            let text_w = hal_font::text_width(&text, font_size);
             // 不同按钮类型的 padding 不同（实测自 Godot 默认主题）：
             //   Button/LinkButton: 文字 + ~10-20px
             //   CheckBox/CheckButton: 复选框图标(~20px) + 文字 + spacing
