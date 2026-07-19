@@ -3,10 +3,47 @@
 //! 这是连接解析层（hal-poc）和布局层（hal-layout）的桥梁。
 //! 输入 SceneNode 树（带 anchor/offset 属性），输出 LayoutNode 树。
 
-use hal_poc::{SceneData, SceneNode, Variant};
+use hal_poc::{SceneData, SceneNode, SubResource, Variant};
 
 use crate::anchor::{AnchorsPreset, Offsets, Preset};
 use crate::layout_tree::{ContainerType, LayoutNode, Size, SizeFlags};
+
+/// 从 SubResource 的 props 里取 float 值
+fn subres_f32(sub: Option<&SubResource>, key: &str) -> Option<f32> {
+    let sub = sub?;
+    sub.props.iter().find(|(k, _)| k == key).and_then(|(_, v)| match v {
+        Variant::Float(f) => Some(*f),
+        Variant::Int(i) => Some(*i as f32),
+        _ => None,
+    })
+}
+
+/// 查 SubResource 表，返回 &SubResource
+fn lookup_subres<'a>(scene: &'a SceneData, id: &str) -> Option<&'a SubResource> {
+    scene.sub_resources.iter().find(|s| s.id == id)
+}
+
+/// 从节点的 theme_override_styles/panel 属性查 SubResource 的 content_margin
+fn get_panel_margins(scene: &SceneData, node: &SceneNode) -> (f32, f32, f32, f32) {
+    // 先从 theme_override_constants 读
+    let left = get_f32(node, "theme_override_constants/content_margin_left").unwrap_or(0.0);
+    let top = get_f32(node, "theme_override_constants/content_margin_top").unwrap_or(0.0);
+    let right = get_f32(node, "theme_override_constants/content_margin_right").unwrap_or(0.0);
+    let bottom = get_f32(node, "theme_override_constants/content_margin_bottom").unwrap_or(0.0);
+    if left != 0.0 || top != 0.0 || right != 0.0 || bottom != 0.0 {
+        return (left, top, right, bottom);
+    }
+    // 从 SubResource 读
+    if let Some(Variant::SubResource(id)) = get_prop(node, "theme_override_styles/panel") {
+        let sub = lookup_subres(scene, id);
+        let l = subres_f32(sub, "content_margin_left").unwrap_or(0.0);
+        let t = subres_f32(sub, "content_margin_top").unwrap_or(0.0);
+        let r = subres_f32(sub, "content_margin_right").unwrap_or(0.0);
+        let b = subres_f32(sub, "content_margin_bottom").unwrap_or(0.0);
+        return (l, t, r, b);
+    }
+    (0.0, 0.0, 0.0, 0.0)
+}
 
 /// 从 SceneData 构建 LayoutNode 树（场景根）。
 ///
@@ -18,7 +55,7 @@ pub fn build_layout_tree(scene: &SceneData, window_size: Size) -> Option<LayoutN
 
     // 第一个节点作为根（无 parent 或 parent="."）
     let root_scene_node = &scene.nodes[0];
-    let mut root = convert_node(root_scene_node);
+    let mut root = convert_node(scene, root_scene_node);
 
     // 构建"路径 → 节点" 的映射，用于高效查找父子关系
     let mut path_to_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
@@ -83,7 +120,7 @@ fn build_children_recursive(
         };
 
         if is_child {
-            let mut child = convert_node(node);
+            let mut child = convert_node(scene, node);
             let child_path = if current_path == root_name {
                 // 根的子节点路径就是 name（不是 root/child，因为 parent="." 不含 root）
                 // 但 Godot 实际上更深层用 "MainPanel/HSplit"，所以根的子节点路径就是 "MainPanel"
@@ -98,9 +135,9 @@ fn build_children_recursive(
 }
 
 /// 把单个 SceneNode 转成 LayoutNode（不递归子节点）。
-fn convert_node(scene_node: &SceneNode) -> LayoutNode {
+fn convert_node(scene: &SceneData, scene_node: &SceneNode) -> LayoutNode {
     let (anchors, offsets) = extract_anchors_offsets(scene_node);
-    let container = extract_container(scene_node);
+    let container = extract_container(scene, scene_node);
     let min_size = extract_min_size(scene_node);
 
     let mut layout = LayoutNode::new(&scene_node.name, anchors, offsets);
@@ -171,7 +208,7 @@ fn extract_anchors_offsets(node: &SceneNode) -> (AnchorsPreset, Offsets) {
 }
 
 /// 从节点类型推断容器类型。
-fn extract_container(node: &SceneNode) -> Option<ContainerType> {
+fn extract_container(scene: &SceneData, node: &SceneNode) -> Option<ContainerType> {
     let ty = node.r#type.as_deref()?;
     let separation = get_f32(node, "theme_override_constants/separation").unwrap_or(0.0);
 
@@ -186,8 +223,11 @@ fn extract_container(node: &SceneNode) -> Option<ContainerType> {
             Some(ContainerType::Margin { left, top, right, bottom })
         }
         "CenterContainer" | "Center" => Some(ContainerType::Center),
-        // PanelContainer: 子节点全填满（类似 Margin=0）
-        "PanelContainer" => Some(ContainerType::Margin { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 }),
+        // PanelContainer: 从 StyleBoxFlat SubResource 读 content_margin
+        "PanelContainer" => {
+            let (left, top, right, bottom) = get_panel_margins(scene, node);
+            Some(ContainerType::Margin { left, top, right, bottom })
+        }
         // HSplitContainer: 用 split_offset 固定第一个子节点宽度
         "HSplitContainer" => {
             let split = get_f32(node, "split_offset")

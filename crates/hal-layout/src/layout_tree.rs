@@ -356,10 +356,15 @@ impl LayoutNode {
     }
 
     /// 递归布局子节点（用自己的当前尺寸作为父尺寸）。
+    /// 如果自己是容器，先调 layout_container 给子节点设 position/size。
     fn layout_children(&mut self) {
-        let my_size = self.computed.size;
-        for child in &mut self.children {
-            child.layout(my_size);
+        if let Some(container) = self.container {
+            self.layout_container(container);
+        } else {
+            let my_size = self.computed.size;
+            for child in &mut self.children {
+                child.layout(my_size);
+            }
         }
     }
 
