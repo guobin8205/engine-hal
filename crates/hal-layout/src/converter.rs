@@ -394,21 +394,51 @@ fn extract_min_size(node: &SceneNode) -> Size {
     let ty = node.r#type.as_deref().unwrap_or("");
 
     match ty {
-        // Label/RichTextLabel: min_size = 行高，宽度 = 0（FILL 模式不要求宽度，由容器分配）
-        "Label" | "RichTextLabel" => {
+        // Label: min_size = 文字尺寸估算
+        // min_width = chars × font_size × 0.52（默认字体平均字符宽度系数，含变宽字体）
+        // min_height = font_size × 1.25（行高，含行间距）
+        // 多行 text（含 \n）取最长行，高度 × 行数
+        "Label" => {
             let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
-            let line_h = font_size * 1.25;
-            Size::new(0.0, line_h)
-        }
-        // Button/CheckBox/CheckButton: 根据 text 估算（加 padding）
-        "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton" => {
             let text = get_string_prop(node, "text").unwrap_or_default();
-            let char_w = 8.0;
-            let w = (text.chars().count() as f32 * char_w + 30.0).max(40.0);
-            Size::new(w, 30.0)
+            let char_w = font_size * 0.52;
+            let line_h = font_size * 1.25;
+            let lines: Vec<&str> = text.split('\n').collect();
+            let max_chars = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0) as f32;
+            let height = line_h * lines.len() as f32;
+            Size::new(max_chars * char_w, height)
         }
-        // SpinBox/LineEdit: 固定宽度
-        "SpinBox" | "LineEdit" => Size::new(100.0, 30.0),
+        // RichTextLabel: min_size 默认很小（(1,0)），由容器分配尺寸
+        // RichTextLabel 的 autofill 行为和 Label 不同，min_size 不基于文字长度
+        "RichTextLabel" => Size::new(1.0, 0.0),
+        // Button/CheckBox/CheckButton/LinkButton: 根据 text 估算 + 主题 padding
+        // min_width = chars × font_size × 0.48 + padding
+        // 系数 0.48 偏保守（默认字体实测 0.48-0.55），避免过估算撑开容器
+        "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton"
+        | "MenuButton" | "OptionButton" => {
+            let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
+            let text = get_string_prop(node, "text").unwrap_or_default();
+            let char_w = font_size * 0.48;
+            let text_w = text.chars().count() as f32 * char_w;
+            // 不同按钮类型的 padding 不同（实测自 Godot 默认主题）：
+            //   Button/LinkButton: 文字 + ~10-20px
+            //   CheckBox/CheckButton: 复选框图标(~20px) + 文字 + spacing
+            //   ColorPickerButton: 色块为主
+            //   MenuButton/OptionButton: 含下拉箭头
+            let (pad, min_w) = match ty {
+                "LinkButton" => (10.0, 20.0),  // 无边框，padding 小
+                "CheckBox" | "CheckButton" => (24.0, 40.0),
+                "ColorPickerButton" => (0.0, 30.0),
+                "MenuButton" | "OptionButton" => (30.0, 40.0),
+                _ => (16.0, 40.0),  // Button
+            };
+            let w = (text_w + pad).max(min_w);
+            Size::new(w, 31.0)
+        }
+        // SpinBox: 实际是 LineEdit + 上下箭头，min 宽度由数字位数决定
+        "SpinBox" => Size::new(40.0, 31.0),
+        // LineEdit: 默认 min 较小（文字 + padding）
+        "LineEdit" => Size::new(68.0, 31.0),
         // TextEdit/CodeEdit: 默认 256x200
         "TextEdit" | "CodeEdit" => Size::new(256.0, 200.0),
         // Tree: 默认 100x100

@@ -546,8 +546,9 @@ impl LayoutNode {
                         Size::ZERO
                     }
                 }
-                ContainerType::HSplit { separation, .. } | ContainerType::VSplit { separation, .. } => {
-                    // Split 的 min_size 和 Box 类似
+                ContainerType::HSplit { separation, .. } => {
+                    // HSplit（水平分割，移植 Godot split_container.cpp::_get_minimum_size）：
+                    // min_width = sum(子 width) + sep*(n-1), min_height = max(子 height)
                     let n = self.children.len();
                     let total: Size = self.children.iter().fold(Size::ZERO, |acc, c| {
                         let cm = c.combined_min_size();
@@ -555,6 +556,17 @@ impl LayoutNode {
                     });
                     let sep_total = if n > 0 { separation * (n as f32 - 1.0) } else { 0.0 };
                     Size::new(total.width + sep_total, total.height)
+                }
+                ContainerType::VSplit { separation, .. } => {
+                    // VSplit（垂直分割）：
+                    // min_height = sum(子 height) + sep*(n-1), min_width = max(子 width)
+                    let n = self.children.len();
+                    let total: Size = self.children.iter().fold(Size::ZERO, |acc, c| {
+                        let cm = c.combined_min_size();
+                        Size::new(acc.width.max(cm.width), acc.height + cm.height)
+                    });
+                    let sep_total = if n > 0 { separation * (n as f32 - 1.0) } else { 0.0 };
+                    Size::new(total.width, total.height + sep_total)
                 }
                 ContainerType::Tab { tab_bar_height, current_tab, panel_left, panel_top, panel_right, panel_bottom } => {
                     // min_size = 当前 tab 内容 min_size + tab_bar_height + panel margins
