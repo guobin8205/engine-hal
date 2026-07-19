@@ -209,12 +209,58 @@ fn extract_container(node: &SceneNode) -> Option<ContainerType> {
     }
 }
 
-/// 提取 custom_minimum_size。
+/// 提取 minimum_size。
+///
+/// 优先级：
+/// 1. custom_minimum_size（显式设置）
+/// 2. 根据节点类型估算（Label 用 text 长度，Button 用 text，其他用默认）
 fn extract_min_size(node: &SceneNode) -> Size {
+    // 1. 显式 custom_minimum_size
     if let Some(Variant::Vector2(v)) = get_prop(node, "custom_minimum_size") {
-        Size::new(v.x, v.y)
-    } else {
-        Size::ZERO
+        return Size::new(v.x, v.y);
+    }
+
+    // 2. 根据类型估算
+    let ty = node.r#type.as_deref().unwrap_or("");
+
+    match ty {
+        // Label/RichTextLabel: 根据 text 长度估算（每字符约 8px 宽，高度 20px）
+        "Label" | "RichTextLabel" => {
+            let text = get_string_prop(node, "text").unwrap_or_default();
+            let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
+            let char_w = font_size * 0.6; // 近似字符宽度
+            let line_h = font_size * 1.25;
+            let w = (text.chars().count() as f32 * char_w).max(20.0);
+            Size::new(w, line_h)
+        }
+        // Button/CheckBox/CheckButton: 根据 text 估算（加 padding）
+        "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton" => {
+            let text = get_string_prop(node, "text").unwrap_or_default();
+            let char_w = 8.0;
+            let w = (text.chars().count() as f32 * char_w + 30.0).max(40.0);
+            Size::new(w, 30.0)
+        }
+        // SpinBox/LineEdit: 固定宽度
+        "SpinBox" | "LineEdit" => Size::new(100.0, 30.0),
+        // TextEdit/CodeEdit: 默认 256x200
+        "TextEdit" | "CodeEdit" => Size::new(256.0, 200.0),
+        // Tree: 默认 100x100
+        "Tree" => Size::new(100.0, 100.0),
+        // HSeparator/VSeparator: 细长
+        "HSeparator" => Size::new(0.0, 4.0),
+        "VSeparator" => Size::new(4.0, 0.0),
+        // TextureProgressBar: 默认 128x128
+        "TextureProgressBar" => Size::new(128.0, 128.0),
+        // 其他 Control: min_size = 0（由子节点决定）
+        _ => Size::ZERO,
+    }
+}
+
+/// 工具：获取字符串属性
+fn get_string_prop(node: &SceneNode, key: &str) -> Option<String> {
+    match get_prop(node, key) {
+        Some(Variant::String(s)) => Some(s.clone()),
+        _ => None,
     }
 }
 

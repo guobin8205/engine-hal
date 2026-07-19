@@ -50,13 +50,25 @@ fn control_gallery_matches_godot() {
     let tree = build_layout_tree(&scene, window_size).expect("构建布局树失败");
     let flat = tree.flatten();
 
-    // 构建 hal-layout 的 name → (pos, size) 映射
+    // 构建 hal-layout 的 path → (pos, size) 映射
     let mut hal_map: HashMap<String, ((f32, f32), (f32, f32))> = HashMap::new();
     for node in &flat {
-        hal_map.insert(
-            node.name.clone(),
-            (node.position, (node.size.width, node.size.height)),
-        );
+        // golden 的根节点路径是 ""，hal-layout 的根节点路径是 name
+        let golden_path = if node.path == flat[0].name {
+            "".to_string()
+        } else {
+            // 去掉根节点名前缀：MainPanel/HSplit → MainPanel/HSplit
+            // golden 的根是 ""，子节点是 "MainPanel"
+            // hal 的根是 "ControlGallery"，子节点是 "ControlGallery/MainPanel"
+            // 需要去掉 "ControlGallery/" 前缀
+            let prefix = &flat[0].name;
+            if let Some(rest) = node.path.strip_prefix(&format!("{}/", prefix)) {
+                rest.to_string()
+            } else {
+                node.path.clone()
+            }
+        };
+        hal_map.insert(golden_path, (node.position, (node.size.width, node.size.height)));
     }
 
     let mut match_count = 0;
@@ -66,8 +78,7 @@ fn control_gallery_matches_godot() {
 
     // 对比每个 golden 节点
     for (path, g) in &golden.nodes {
-        // 用节点名在 hal_map 里找
-        if let Some(&(hal_pos, hal_size)) = hal_map.get(&g.name) {
+        if let Some(&(hal_pos, hal_size)) = hal_map.get(path) {
             let dx = (hal_pos.0 as f64 - g.x).abs();
             let dy = (hal_pos.1 as f64 - g.y).abs();
             let dw = (hal_size.0 as f64 - g.width).abs();

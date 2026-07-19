@@ -166,20 +166,22 @@ impl LayoutNode {
                 }
             }
             ContainerType::HSplit { separation, split_offset } => {
-                // HSplitContainer：第一个子节点宽度 = split_offset
-                // 第二个子节点占剩余宽度
+                // HSplitContainer
+                // 当 split_offset > 0：第一个子节点固定 split_offset 宽度
+                // 当 split_offset == 0：和 HBox 一样，按 min_size + EXPAND 瓜分
                 let n = self.children.len();
-                if n >= 1 {
-                    let first_w = split_offset.max(0.0);
-                    let rest_w = (my_size.width - first_w - separation * (n as f32 - 1.0)).max(0.0);
+                if n == 0 {
+                    return;
+                }
 
-                    // 第一个子节点
+                if split_offset > 0.0 {
+                    // 显式 split_offset
+                    let first_w = split_offset;
+                    let rest_w = (my_size.width - first_w - separation * (n as f32 - 1.0)).max(0.0);
                     let child = &mut self.children[0];
                     child.computed.position = (0.0, 0.0);
                     child.computed.size = Size::new(first_w, my_size.height);
                     child.layout_children();
-
-                    // 后续子节点瓜分剩余宽度
                     let mut x = first_w + separation;
                     let rest_per_child = if n > 1 { rest_w / (n as f32 - 1.0) } else { 0.0 };
                     for child in self.children.iter_mut().skip(1) {
@@ -188,19 +190,24 @@ impl LayoutNode {
                         child.layout_children();
                         x += rest_per_child + separation;
                     }
+                } else {
+                    // split_offset=0 → 和 HBox 一样
+                    self.layout_container(ContainerType::HBox { separation });
                 }
             }
             ContainerType::VSplit { separation, split_offset } => {
                 let n = self.children.len();
-                if n >= 1 {
-                    let first_h = split_offset.max(0.0);
-                    let rest_h = (my_size.height - first_h - separation * (n as f32 - 1.0)).max(0.0);
+                if n == 0 {
+                    return;
+                }
 
+                if split_offset > 0.0 {
+                    let first_h = split_offset;
+                    let rest_h = (my_size.height - first_h - separation * (n as f32 - 1.0)).max(0.0);
                     let child = &mut self.children[0];
                     child.computed.position = (0.0, 0.0);
                     child.computed.size = Size::new(my_size.width, first_h);
                     child.layout_children();
-
                     let mut y = first_h + separation;
                     let rest_per_child = if n > 1 { rest_h / (n as f32 - 1.0) } else { 0.0 };
                     for child in self.children.iter_mut().skip(1) {
@@ -209,6 +216,9 @@ impl LayoutNode {
                         child.layout_children();
                         y += rest_per_child + separation;
                     }
+                } else {
+                    // split_offset=0 → 和 VBox 一样
+                    self.layout_container(ContainerType::VBox { separation });
                 }
             }
             ContainerType::Margin { left, top, right, bottom } => {
@@ -255,15 +265,17 @@ impl LayoutNode {
                 for (i, child) in self.children.iter_mut().enumerate() {
                     let child_min = child.combined_min_size();
                     let child_width = if child.size_flags_horizontal.is_expand() && total_stretch > 0.0 {
-                        let w = (avail * child.stretch_ratio / total_stretch).floor();
+                        let w_expanded = (avail * child.stretch_ratio / total_stretch).floor();
+                        // EXPAND 至少拿到 min_size，但不超过容器宽度
+                        let w = w_expanded.max(child_min.width).min(my_size.width);
                         expand_allocated += w;
                         if Some(i) == last_expand_idx {
-                            w + (avail - expand_allocated.floor())
+                            (w + (avail - expand_allocated.floor())).max(0.0)
                         } else {
                             w
                         }
                     } else {
-                        child_min.width
+                        child_min.width.min(my_size.width)
                     };
 
                     child.computed.position = (x, 0.0);
@@ -319,12 +331,14 @@ impl LayoutNode {
                     };
 
                     child.computed.position = (0.0, y);
+                    // 交叉轴：FILL 填满，否则用 min_size
+                    // Godot 里 FILL（不带 EXPAND）在 VBox 的水平方向也填满
                     let child_width = if child.size_flags_horizontal.is_fill() {
                         my_size.width
                     } else {
                         child_min.width
                     };
-                    child.computed.size = Size::new(child_width, child_height);
+                    child.computed.size = Size::new(child_width.max(child_min.width), child_height);
                     child.layout_children();
                     y += child_height + separation;
                 }
@@ -398,22 +412,24 @@ impl LayoutNode {
     /// 输出**全局坐标**（累加父节点的 position），用于和 Godot 的 get_global_rect() 对比。
     pub fn flatten(&self) -> Vec<FlatNode> {
         let mut out = Vec::new();
-        self.flatten_into(&mut out, (0.0, 0.0));
+        self.flatten_into(&mut out, (0.0, 0.0), &self.name);
         out
     }
 
-    fn flatten_into(&self, out: &mut Vec<FlatNode>, parent_global: (f32, f32)) {
+    fn flatten_into(&self, out: &mut Vec<FlatNode>, parent_global: (f32, f32), path: &str) {
         let global_pos = (
             parent_global.0 + self.computed.position.0,
             parent_global.1 + self.computed.position.1,
         );
         out.push(FlatNode {
             name: self.name.clone(),
+            path: path.to_string(),
             position: global_pos,
             size: self.computed.size,
         });
         for child in &self.children {
-            child.flatten_into(out, global_pos);
+            let child_path = format!("{}/{}", path, child.name);
+            child.flatten_into(out, global_pos, &child_path);
         }
     }
 }
@@ -422,6 +438,8 @@ impl LayoutNode {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlatNode {
     pub name: String,
+    /// 完整路径（从根开始，如 "MainPanel/HSplitContainer"）
+    pub path: String,
     pub position: (f32, f32),
     pub size: Size,
 }
