@@ -114,31 +114,29 @@ fn convert_node(scene_node: &SceneNode) -> LayoutNode {
 
 /// 从 SceneNode 的 props 提取锚点配置。
 ///
-/// Godot 的锚点属性优先级：
-/// 1. anchors_preset（如果存在，设置所有 4 个 anchor）
-/// 2. anchor_left/right/top/bottom（个别覆盖）
-/// 3. offset_left/top/right/bottom（像素偏移）
+/// 关键：**anchors_preset 只是编辑器标记，不实际设置 anchor 值**。
+/// Godot 序列化时，只有显式写入的 anchor_left/top/right/bottom 才生效。
+/// anchors_preset 用于编辑器显示，加载时不应用。
+///
+/// 这意味着：如果 .tscn 里只有 `anchors_preset=12, anchor_top=1.0, anchor_bottom=1.0`
+/// 但没有 `anchor_right`，那 anchor_right 保持默认值 0.0（不是 preset 的 1.0）。
 fn extract_anchors_offsets(node: &SceneNode) -> (AnchorsPreset, Offsets) {
-    // 默认 TopLeft
-    let mut anchors = AnchorsPreset {
+    // 默认全 0（TopLeft）
+    let anchors = AnchorsPreset {
         anchor_left: 0.0,
         anchor_top: 0.0,
         anchor_right: 0.0,
         anchor_bottom: 0.0,
     };
-    let mut offsets = Offsets {
+    let offsets = Offsets {
         offset_left: 0.0,
         offset_top: 0.0,
         offset_right: 0.0,
         offset_bottom: 0.0,
     };
 
-    // 1. anchors_preset（整数枚举）
-    if let Some(preset) = get_int(node, "anchors_preset").and_then(Preset::from_int) {
-        anchors = preset.to_anchors();
-    }
-
-    // 2. 个别 anchor 覆盖
+    // 只用显式存在的 anchor 属性（不用 anchors_preset！）
+    let mut anchors = anchors;
     if let Some(v) = get_f32(node, "anchor_left") {
         anchors.anchor_left = v;
     }
@@ -152,7 +150,7 @@ fn extract_anchors_offsets(node: &SceneNode) -> (AnchorsPreset, Offsets) {
         anchors.anchor_bottom = v;
     }
 
-    // 3. offset
+    let mut offsets = offsets;
     if let Some(v) = get_f32(node, "offset_left") {
         offsets.offset_left = v;
     }

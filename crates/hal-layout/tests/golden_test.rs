@@ -43,10 +43,7 @@ fn load_scene() -> hal_poc::SceneData {
 const TOLERANCE: f64 = 1.5;
 
 /// 已知的语义差异（Phase 1 待完整对齐）。
-/// 这些节点的差异不是 bug，而是 hal-layout 还没实现的 Godot 行为。
-const KNOWN_DIFFERENCES: &[&str] = &[
-    "BottomWide",  // Godot ColorRect 无内容时 minimum_size=0，anchor 拉伸后 size 仍为 0
-];
+const KNOWN_DIFFERENCES: &[&str] = &[];
 
 #[test]
 fn hal_layout_matches_godot() {

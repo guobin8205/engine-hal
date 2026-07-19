@@ -4,9 +4,6 @@ extends Control
 # 场景加载后，等帧让布局完成，然后导出所有 Control 的最终 position+size
 
 func _ready():
-	# 强制设置 Root Control 的 size 为标准测试分辨率
-	# headless 模式下 window.size 是 (64,64)，Control 用的是 dummy display 的默认值
-	# 为了和 hal-layout/Cocos 的 960x640 一致，手动覆盖
 	self.size = Vector2i(960, 640)
 	self.set_anchors_preset(Control.PRESET_FULL_RECT)
 
