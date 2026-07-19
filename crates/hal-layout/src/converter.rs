@@ -6,7 +6,7 @@
 use hal_poc::{SceneData, SceneNode, SubResource, Variant};
 
 use crate::anchor::{AnchorsPreset, Offsets, Preset};
-use crate::layout_tree::{ContainerType, LayoutNode, Size, SizeFlags};
+use crate::layout_tree::{ContainerType, GrowDirection, LayoutNode, Size, SizeFlags};
 
 /// 从 SubResource 的 props 里取 float 值
 fn subres_f32(sub: Option<&SubResource>, key: &str) -> Option<f32> {
@@ -156,6 +156,8 @@ fn convert_node(scene: &SceneData, scene_node: &SceneNode) -> LayoutNode {
     layout.size_flags_vertical = SizeFlags::new(get_int(scene_node, "size_flags_vertical").unwrap_or(1) as u32);
     layout.stretch_ratio = get_f32(scene_node, "size_flags_stretch_ratio").unwrap_or(1.0);
     layout.layout_mode = get_int(scene_node, "layout_mode").unwrap_or(0) as i32;
+    layout.grow_h = GrowDirection::from_int(get_int(scene_node, "grow_horizontal").unwrap_or(1));
+    layout.grow_v = GrowDirection::from_int(get_int(scene_node, "grow_vertical").unwrap_or(1));
     layout.visible = match get_prop(scene_node, "visible") {
         Some(Variant::Bool(b)) => *b,
         _ => true,
@@ -277,14 +279,13 @@ fn extract_min_size(node: &SceneNode) -> Size {
     let ty = node.r#type.as_deref().unwrap_or("");
 
     match ty {
-        // Label/RichTextLabel: 根据 text 长度估算（每字符约 8px 宽，高度 20px）
+        // Label/RichTextLabel: min_size = text 高度，宽度 = 0（FILL 模式不要求宽度）
         "Label" | "RichTextLabel" => {
             let text = get_string_prop(node, "text").unwrap_or_default();
             let font_size = get_f32(node, "theme_override_font_sizes/font_size").unwrap_or(16.0);
-            let char_w = font_size * 0.6; // 近似字符宽度
             let line_h = font_size * 1.25;
-            let w = (text.chars().count() as f32 * char_w).max(20.0);
-            Size::new(w, line_h)
+            // 宽度 = 0（FILL 模式不限制宽度，由容器分配）
+            Size::new(0.0, line_h)
         }
         // Button/CheckBox/CheckButton: 根据 text 估算（加 padding）
         "Button" | "CheckBox" | "CheckButton" | "LinkButton" | "ColorPickerButton" => {

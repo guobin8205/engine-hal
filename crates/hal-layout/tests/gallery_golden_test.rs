@@ -27,44 +27,43 @@ struct GoldenNode {
     min_height: f64,
 }
 
-const TOLERANCE: f64 = 15.0; // VBox theme padding 偏移
+const TOLERANCE: f64 = 10.0; // grow_direction 未实现，允许 8px 偏移
 
 /// 递归注入 Godot 提供的真实 min_size 到 LayoutNode 树。
 /// 这样能验证布局算法的正确性（排除 min_size 估算误差的影响）。
 fn inject_godot_min_sizes(
     node: &mut hal_layout::layout_tree::LayoutNode,
     golden: &GoldenLayout,
-    _parent_path: &str,
+    parent_path: &str,
+    root_name: &str,
 ) {
-    let mut found: Option<&GoldenNode> = None;
-    for g in golden.nodes.values() {
-        if g.name == node.name {
-            if found.is_none() || g.min_width > found.unwrap().min_width {
-                found = Some(g);
-            }
-        }
-    }
-    if node.name == "BasicControls" {
-        if let Some(g) = found {
-            eprintln!("INJECT BasicControls: golden min_width={} min_height={}", g.min_width, g.min_height);
-        } else {
-            eprintln!("INJECT BasicControls: NOT FOUND in golden");
-        }
-    }
-    if let Some(g) = found {
+    // 用完整路径匹配 golden
+    let full_path = if parent_path.is_empty() {
+        node.name.clone()
+    } else {
+        format!("{}/{}", parent_path, node.name)
+    };
+    // golden 路径：去掉 root_name 前缀，根节点路径是 ""
+    let golden_key = if full_path == root_name {
+        "".to_string()
+    } else {
+        full_path.strip_prefix(&format!("{}/", root_name))
+            .unwrap_or(&full_path).to_string()
+    };
+
+    if let Some(g) = golden.nodes.get(&golden_key) {
         if g.min_width > 0.0 || g.min_height > 0.0 {
             node.min_size = hal_layout::layout_tree::Size::new(
                 g.min_width as f32,
                 g.min_height as f32,
             );
-            if node.name == "BasicControls" {
-                eprintln!("INJECT BasicControls: SET min_size=({},{})", g.min_width, g.min_height);
-            }
         }
+    } else if node.name == "BasicControls" {
+        eprintln!("INJECT MISS: '{}' golden_key='{}'", node.name, golden_key);
     }
 
     for child in &mut node.children {
-        inject_godot_min_sizes(child, golden, "");
+        inject_godot_min_sizes(child, golden, &full_path, root_name);
     }
 }
 
@@ -96,81 +95,98 @@ fn control_gallery_matches_godot() {
     if let Some(g) = golden.nodes.get("MainPanel/HSplitContainer/BasicControls") {
         eprintln!("GOLDEN CHECK: BasicControls min_width={} min_height={}", g.min_width, g.min_height);
     }
+
+    // 诊断：遍历树打印 BasicControls 子树
+    fn dump_subtree(node: &hal_layout::layout_tree::LayoutNode, depth: usize, max_depth: usize) {
+        if depth > max_depth { return; }
+        eprintln!("{}{}: pos=({:.0},{:.0}) size=({:.0},{:.0})",
+            "  ".repeat(depth), node.name,
+            node.computed.position.0, node.computed.position.1,
+            node.computed.size.width, node.computed.size.height);
+        for c in &node.children {
+            dump_subtree(c, depth + 1, max_depth);
+        }
+    }
+    fn find_node2<'a>(node: &'a hal_layout::layout_tree::LayoutNode, name: &str) -> Option<&'a hal_layout::layout_tree::LayoutNode> {
+        if node.name == name { return Some(node); }
+        node.children.iter().find_map(|c| find_node2(c, name))
+    }
+    if let Some(bc) = find_node2(&tree, "BasicControls") {
+        eprintln!("=== BasicControls subtree ===");
+        dump_subtree(bc, 0, 3);
+    }
     // （正式版应该由 hal-layout 自己精确计算 min_size，这里用 golden 验证布局算法的正确性）
-    inject_godot_min_sizes(&mut tree, &golden, "");
+    let root_name = tree.name.clone();
+    inject_godot_min_sizes(&mut tree, &golden, "", &root_name);
 
     // 重新布局（用正确的 min_size）
     tree.layout(window_size);
 
-    let flat = tree.flatten_local();
-
-    let mut hal_map: HashMap<String, ((f32, f32), (f32, f32))> = HashMap::new();
-    let root_name = &flat[0].name;
-    for node in &flat {
-        let golden_path = if &node.path == root_name {
-            "".to_string()
-        } else {
-            node.path.strip_prefix(&format!("{}/", root_name))
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| node.path.clone())
-        };
-        hal_map.insert(golden_path, (node.position, (node.size.width, node.size.height)));
-    }
-
-    fn find_node<'a>(node: &'a hal_layout::layout_tree::LayoutNode, name: &str) -> Option<&'a hal_layout::layout_tree::LayoutNode> {
-        if node.name == name { return Some(node); }
-        node.children.iter().find_map(|c| find_node(c, name))
-    }
-    for n in &["BasicControls", "VSplitContainer", "HSplitContainer"] {
-        if let Some(node) = find_node(&tree, n) {
-            eprintln!("AFTER LAYOUT: {} min_size=({:.0},{:.0}) computed=({:.0},{:.0},{:.0},{:.0})",
-                n, node.min_size.width, node.min_size.height,
-                node.computed.position.0, node.computed.position.1,
-                node.computed.size.width, node.computed.size.height);
-        }
-    }
-    // 诊断：打印 golden 里 BasicControls
-    if let Some(g) = golden.nodes.get("MainPanel/HSplitContainer/BasicControls") {
-        eprintln!("GOLDEN: 'MainPanel/HSplitContainer/BasicControls' pos=({:.0},{:.0}) size=({:.0},{:.0})",
-            g.x, g.y, g.width, g.height);
-    }
-
+    // 直接遍历 LayoutNode 树，对比 computed.position（相对父节点）和 golden 的 get_rect
     let mut match_count = 0;
     let mut miss_count = 0;
     let mut not_found_count = 0;
     let mut details: Vec<String> = Vec::new();
 
-    // 对比每个 golden 节点
-    for (path, g) in &golden.nodes {
-        if let Some(&(hal_pos, hal_size)) = hal_map.get(path) {
-            let dx = (hal_pos.0 as f64 - g.x).abs();
-            let dy = (hal_pos.1 as f64 - g.y).abs();
-            let dw = (hal_size.0 as f64 - g.width).abs();
-            let dh = (hal_size.1 as f64 - g.height).abs();
+    // 构建路径 → node 的递归遍历
+    fn walk_tree(
+        node: &hal_layout::layout_tree::LayoutNode,
+        parent_path: &str,
+        root_name: &str,
+        golden: &GoldenLayout,
+        tolerance: f64,
+        match_count: &mut usize,
+        miss_count: &mut usize,
+        details: &mut Vec<String>,
+    ) {
+        let golden_path = if parent_path.is_empty() {
+            "".to_string()
+        } else {
+            // 去掉 root_name 前缀
+            let full = format!("{}/{}", parent_path, node.name);
+            full.strip_prefix(&format!("{}/", root_name))
+                .unwrap_or(&full).to_string()
+        };
 
-            let ok = dx <= TOLERANCE && dy <= TOLERANCE && dw <= TOLERANCE && dh <= TOLERANCE;
+        if let Some(g) = golden.nodes.get(&golden_path) {
+            let hal_x = node.computed.position.0 as f64;
+            let hal_y = node.computed.position.1 as f64;
+            let hal_w = node.computed.size.width as f64;
+            let hal_h = node.computed.size.height as f64;
+
+            let dx = (hal_x - g.x).abs();
+            let dy = (hal_y - g.y).abs();
+            let dw = (hal_w - g.width).abs();
+            let dh = (hal_h - g.height).abs();
+
+            let ok = dx <= tolerance && dy <= tolerance && dw <= tolerance && dh <= tolerance;
 
             if ok {
-                match_count += 1;
+                *match_count += 1;
             } else {
-                miss_count += 1;
-                if miss_count <= 15 {
+                *miss_count += 1;
+                if *miss_count <= 15 {
                     details.push(format!(
                         "  ❌ {} ({}) : hal=({:.0},{:.0},{:.0},{:.0}) godot=({:.0},{:.0},{:.0},{:.0}) dx={:.0} dy={:.0} dw={:.0} dh={:.0}",
-                        g.name, path,
-                        hal_pos.0, hal_pos.1, hal_size.0, hal_size.1,
+                        node.name, golden_path,
+                        hal_x, hal_y, hal_w, hal_h,
                         g.x, g.y, g.width, g.height,
                         dx, dy, dw, dh
                     ));
                 }
             }
-        } else {
-            not_found_count += 1;
-            if not_found_count <= 5 {
-                details.push(format!("  ⚠️ {} ({}) 不在 hal-layout 结果中", g.name, path));
-            }
+        }
+
+        let child_parent = if parent_path.is_empty() { node.name.clone() } else { format!("{}/{}", parent_path, node.name) };
+        for child in &node.children {
+            walk_tree(child, &child_parent, root_name, golden, tolerance, match_count, miss_count, details);
         }
     }
+
+    let root_name = tree.name.clone();
+    walk_tree(&tree, "", &root_name, &golden, TOLERANCE, &mut match_count, &mut miss_count, &mut details);
+
+    let not_found_count = golden.nodes.len() - match_count - miss_count;
 
     println!("=== control_gallery Golden Test ===");
     println!("总节点数(golden): {}", golden.nodes.len());

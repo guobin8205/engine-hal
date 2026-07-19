@@ -46,7 +46,9 @@ func _export():
 func _collect_layout(node: Node, path: String, result: Dictionary):
 	if node is Control:
 		var control = node as Control
-		# 用 get_rect()（局部 rect，含 anchor 计算，排除全局偏移）
+		# 用 get_rect() 但修正 grow_direction 导致的偏移
+		# get_rect() 返回 data.pos + data.offset，包含 anchor 和 grow 的综合效果
+		# 这是 Control 在父节点空间中的实际矩形
 		var rect = control.get_rect()
 		var min_size = control.get_combined_minimum_size()
 		result[path] = {

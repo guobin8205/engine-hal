@@ -9,6 +9,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::anchor::{compute_rect, AnchorsPreset, ComputedRect, Offsets};
 
+/// grow_direction（Godot Control 的扩展方向）
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
+pub enum GrowDirection {
+    #[default]
+    Begin,
+    End,
+    Both,
+}
+
+impl GrowDirection {
+    pub fn from_int(v: i64) -> Self {
+        match v {
+            0 => GrowDirection::Begin,
+            1 => GrowDirection::End,
+            _ => GrowDirection::Both,
+        }
+    }
+}
+
 /// 布局节点：从 SceneNode 转换而来，带布局相关信息。
 #[derive(Clone, Debug)]
 pub struct LayoutNode {
@@ -28,6 +47,9 @@ pub struct LayoutNode {
     pub stretch_ratio: f32,
     /// layout_mode（0/1=锚点模式，2=容器模式，3=未指定）
     pub layout_mode: i32,
+    /// grow_direction（当 min_size > anchor 矩形时扩展方向）
+    pub grow_h: GrowDirection,
+    pub grow_v: GrowDirection,
     /// 是否可见（hidden 节点在容器布局中跳过）
     pub visible: bool,
     /// 子节点
@@ -115,6 +137,8 @@ impl LayoutNode {
             size_flags_vertical: SizeFlags::new(SizeFlags::FILL),
             stretch_ratio: 1.0,
             layout_mode: 0,
+            grow_h: GrowDirection::default(),
+            grow_v: GrowDirection::default(),
             visible: true,
             children: Vec::new(),
             computed: ComputedLayout::default(),
@@ -148,6 +172,45 @@ impl LayoutNode {
         );
         self.computed.position = (rect.x, rect.y);
         self.computed.size = Size::new(rect.width, rect.height);
+
+        // grow_direction: 如果 min_size > anchor 算出的 size，扩展
+        // layout_mode=2（容器子节点）不应用 grow（size 由父容器决定）
+        if self.layout_mode != 2 {
+        let min = self.combined_min_size();
+        if min.width > self.computed.size.width {
+            let diff = min.width - self.computed.size.width;
+            match self.grow_h {
+                GrowDirection::Both => {
+                    // 居中扩展
+                    self.computed.position.0 -= diff * 0.5;
+                    self.computed.size.width = min.width;
+                }
+                GrowDirection::End => {
+                    self.computed.size.width = min.width;
+                }
+                GrowDirection::Begin => {
+                    self.computed.position.0 -= diff;
+                    self.computed.size.width = min.width;
+                }
+            }
+        }
+        if min.height > self.computed.size.height {
+            let diff = min.height - self.computed.size.height;
+            match self.grow_v {
+                GrowDirection::Both => {
+                    self.computed.position.1 -= diff * 0.5;
+                    self.computed.size.height = min.height;
+                }
+                GrowDirection::End => {
+                    self.computed.size.height = min.height;
+                }
+                GrowDirection::Begin => {
+                    self.computed.position.1 -= diff;
+                    self.computed.size.height = min.height;
+                }
+            }
+        }
+        } // end if layout_mode != 2
 
         if let Some(container) = self.container {
             self.layout_container(container);
