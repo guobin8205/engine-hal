@@ -46,17 +46,15 @@ func _export():
 func _collect_layout(node: Node, path: String, result: Dictionary):
 	if node is Control:
 		var control = node as Control
-		# 用 get_rect() 但修正 grow_direction 导致的偏移
-		# get_rect() 返回 data.pos + data.offset，包含 anchor 和 grow 的综合效果
-		# 这是 Control 在父节点空间中的实际矩形
-		var rect = control.get_rect()
+		# 用 size + position（Control 属性，= Container 分配的 offset）
+		# 不用 get_rect()（含 anchor 计算的 pos，受 grow_direction 影响）
 		var min_size = control.get_combined_minimum_size()
 		result[path] = {
 			"name": node.name,
-			"x": rect.position.x,
-			"y": rect.position.y,
-			"width": rect.size.x,
-			"height": rect.size.y,
+			"x": control.position.x,
+			"y": control.position.y,
+			"width": control.size.x,
+			"height": control.size.y,
 			"min_width": min_size.x,
 			"min_height": min_size.y,
 		}

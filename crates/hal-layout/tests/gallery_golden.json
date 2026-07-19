@@ -567,11 +567,11 @@
     "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Control/TextureProgressBar": {
-    "height": 64.0,
+    "height": 128.0,
     "min_height": 1.0,
     "min_width": 1.0,
     "name": "TextureProgressBar",
-    "width": 64.0,
+    "width": 128.0,
     "x": 0.0,
     "y": 0.0
   },
