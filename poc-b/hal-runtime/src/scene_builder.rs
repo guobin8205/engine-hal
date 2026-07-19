@@ -187,12 +187,21 @@ fn create_label_node(node: &SceneNode) -> Option<u64> {
     Some(ffi::hal_label_create(&c_text, &c_font, 24.0))
 }
 
+/// Godot 坐标系：左上角原点，Y 向下
+/// Cocos 坐标系：左下角原点，Y 向上
+/// 转换：cocos_y = WINDOW_HEIGHT - godot_y
+///
+/// POC 阶段硬编码窗口高度（AppDelegate 用 640）。
+/// 正式版应该从 Director 动态获取 VisibleSize。
+const WINDOW_HEIGHT: f32 = 640.0;
+
 fn apply_common_props(handle: u64, node: &SceneNode) {
-    // position: Vector2(x, y)
+    // position: Vector2(x, y) — 需要翻转 Y 轴
     if let Some(Variant::Vector2(v)) =
         node.props.iter().find(|(k, _)| k == "position").map(|(_, v)| v)
     {
-        ffi::hal_node_set_position(handle, v.x, v.y);
+        let cocos_y = WINDOW_HEIGHT - v.y;
+        ffi::hal_node_set_position(handle, v.x, cocos_y);
     }
 
     // scale: Vector2(x, y)
