@@ -26,6 +26,8 @@ pub struct LayoutNode {
     pub size_flags_vertical: SizeFlags,
     /// 拉伸比例（EXPAND 时瓜分剩余空间的权重）
     pub stretch_ratio: f32,
+    /// layout_mode（0/1=锚点模式，2=容器模式，3=未指定）
+    pub layout_mode: i32,
     /// 子节点
     pub children: Vec<LayoutNode>,
     /// 计算结果（布局后填入）
@@ -110,6 +112,7 @@ impl LayoutNode {
             size_flags_horizontal: SizeFlags::new(SizeFlags::FILL),
             size_flags_vertical: SizeFlags::new(SizeFlags::FILL),
             stretch_ratio: 1.0,
+            layout_mode: 0,
             children: Vec::new(),
             computed: ComputedLayout::default(),
         }
@@ -124,7 +127,16 @@ impl LayoutNode {
     ///
     /// 这是布局系统的核心入口。
     pub fn layout(&mut self, parent_size: Size) {
-        // 1. 计算自己的锚点矩形（相对父节点）
+        // layout_mode=2（容器模式）：
+        // 如果自己有 anchor/offset（即使 layout_mode=2，Godot 里有时仍有序列化的 offset），
+        // 仍然用 anchor 计算（因为父容器会在 layout_container 里覆盖 position）
+        // 但如果 anchor 全是 0 且 offset 全是 0，说明确实需要父容器设置
+        //
+        // 务实做法：layout_mode=2 的节点仍然用 anchor 计算
+        // （因为父容器的 layout_container 会覆盖 position/size）
+        // 这样非容器父下的 layout_mode=2 节点也能正确定位
+
+        // 用 anchor+offset 计算
         let rect = compute_rect(
             parent_size.width,
             parent_size.height,
@@ -134,12 +146,9 @@ impl LayoutNode {
         self.computed.position = (rect.x, rect.y);
         self.computed.size = Size::new(rect.width, rect.height);
 
-        // 2. 如果是容器，按容器规则布局子节点
-        //    否则子节点按锚点相对自己的尺寸布局
         if let Some(container) = self.container {
             self.layout_container(container);
         } else {
-            // 非容器：子节点直接用自身尺寸作为父尺寸做锚点布局
             let my_size = self.computed.size;
             for child in &mut self.children {
                 child.layout(my_size);

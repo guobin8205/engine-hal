@@ -110,6 +110,7 @@ fn convert_node(scene_node: &SceneNode) -> LayoutNode {
     layout.size_flags_horizontal = SizeFlags::new(get_int(scene_node, "size_flags_horizontal").unwrap_or(1) as u32);
     layout.size_flags_vertical = SizeFlags::new(get_int(scene_node, "size_flags_vertical").unwrap_or(1) as u32);
     layout.stretch_ratio = get_f32(scene_node, "size_flags_stretch_ratio").unwrap_or(1.0);
+    layout.layout_mode = get_int(scene_node, "layout_mode").unwrap_or(0) as i32;
 
     layout
 }
