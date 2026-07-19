@@ -1,0 +1,86 @@
+{
+  "DragAndDrop": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "DragAndDrop",
+    "w": 960.0
+  },
+  "DragAndDrop/GridContainer": {
+    "gx": 230.0,
+    "gy": 170.0,
+    "h": 350.0,
+    "name": "GridContainer",
+    "w": 500.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton0": {
+    "gx": 264.0,
+    "gy": 195.0,
+    "h": 64.0,
+    "name": "ColorPickerButton0",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton1": {
+    "gx": 432.0,
+    "gy": 195.0,
+    "h": 64.0,
+    "name": "ColorPickerButton1",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton2": {
+    "gx": 600.0,
+    "gy": 195.0,
+    "h": 64.0,
+    "name": "ColorPickerButton2",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton3": {
+    "gx": 264.0,
+    "gy": 313.0,
+    "h": 64.0,
+    "name": "ColorPickerButton3",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton4": {
+    "gx": 432.0,
+    "gy": 313.0,
+    "h": 64.0,
+    "name": "ColorPickerButton4",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton5": {
+    "gx": 600.0,
+    "gy": 313.0,
+    "h": 64.0,
+    "name": "ColorPickerButton5",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton6": {
+    "gx": 264.0,
+    "gy": 431.0,
+    "h": 64.0,
+    "name": "ColorPickerButton6",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton7": {
+    "gx": 432.0,
+    "gy": 431.0,
+    "h": 64.0,
+    "name": "ColorPickerButton7",
+    "w": 96.0
+  },
+  "DragAndDrop/GridContainer/ColorPickerButton8": {
+    "gx": 600.0,
+    "gy": 431.0,
+    "h": 64.0,
+    "name": "ColorPickerButton8",
+    "w": 96.0
+  },
+  "DragAndDrop/Information": {
+    "gx": 180.0,
+    "gy": 140.0,
+    "h": 30.0,
+    "name": "Information",
+    "w": 625.0
+  }
+}

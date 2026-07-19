@@ -1,0 +1,65 @@
+{
+  "Control": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "Control",
+    "w": 960.0
+  },
+  "Control/Panel": {
+    "gx": 370.0,
+    "gy": 193.0,
+    "h": 254.0,
+    "name": "Panel",
+    "w": 220.0
+  },
+  "Control/Panel/MarginContainer": {
+    "gx": 370.0,
+    "gy": 193.0,
+    "h": 254.0,
+    "name": "MarginContainer",
+    "w": 220.0
+  },
+  "Control/Panel/MarginContainer/VBoxContainer": {
+    "gx": 390.0,
+    "gy": 213.0,
+    "h": 214.0,
+    "name": "VBoxContainer",
+    "w": 180.0
+  },
+  "Control/Panel/MarginContainer/VBoxContainer/Button": {
+    "gx": 390.0,
+    "gy": 260.0,
+    "h": 48.0,
+    "name": "Button",
+    "w": 180.0
+  },
+  "Control/Panel/MarginContainer/VBoxContainer/Button2": {
+    "gx": 390.0,
+    "gy": 318.0,
+    "h": 48.0,
+    "name": "Button2",
+    "w": 180.0
+  },
+  "Control/Panel/MarginContainer/VBoxContainer/HSeparator": {
+    "gx": 390.0,
+    "gy": 246.0,
+    "h": 4.0,
+    "name": "HSeparator",
+    "w": 180.0
+  },
+  "Control/Panel/MarginContainer/VBoxContainer/Label": {
+    "gx": 390.0,
+    "gy": 213.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 180.0
+  },
+  "Control/Panel/MarginContainer/VBoxContainer/ResetAllButton": {
+    "gx": 390.0,
+    "gy": 376.0,
+    "h": 48.0,
+    "name": "ResetAllButton",
+    "w": 180.0
+  }
+}

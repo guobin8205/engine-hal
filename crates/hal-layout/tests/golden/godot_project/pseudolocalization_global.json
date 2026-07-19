@@ -1,0 +1,226 @@
+{
+  "Pseudolocalization": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "Pseudolocalization",
+    "w": 960.0
+  },
+  "Pseudolocalization/Main": {
+    "gx": 20.0,
+    "gy": 150.0,
+    "h": 490.0,
+    "name": "Main",
+    "w": 920.0
+  },
+  "Pseudolocalization/Main/MarginContainer": {
+    "gx": 940.0,
+    "gy": 150.0,
+    "h": 490.0,
+    "name": "MarginContainer",
+    "w": 0.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options": {
+    "gx": 20.0,
+    "gy": 150.0,
+    "h": 490.0,
+    "name": "Pseudolocalization_options",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/accents": {
+    "gx": 20.0,
+    "gy": 185.0,
+    "h": 31.0,
+    "name": "accents",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/doublevowels": {
+    "gx": 20.0,
+    "gy": 220.0,
+    "h": 31.0,
+    "name": "doublevowels",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/exp_ratio": {
+    "gx": 20.0,
+    "gy": 360.0,
+    "h": 31.0,
+    "name": "exp_ratio",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/exp_ratio/Label": {
+    "gx": 24.0,
+    "gy": 360.0,
+    "h": 31.0,
+    "name": "Label",
+    "w": 128.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/exp_ratio/MarginContainer": {
+    "gx": 20.0,
+    "gy": 360.0,
+    "h": 31.0,
+    "name": "MarginContainer",
+    "w": 0.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/exp_ratio/SpinBox": {
+    "gx": 373.0,
+    "gy": 360.0,
+    "h": 31.0,
+    "name": "SpinBox",
+    "w": 87.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/fakebidi": {
+    "gx": 20.0,
+    "gy": 255.0,
+    "h": 31.0,
+    "name": "fakebidi",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/override": {
+    "gx": 20.0,
+    "gy": 290.0,
+    "h": 31.0,
+    "name": "override",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/prefix": {
+    "gx": 20.0,
+    "gy": 395.0,
+    "h": 0.0,
+    "name": "prefix",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/prefix/Label": {
+    "gx": 26.0,
+    "gy": 397.861328125,
+    "h": 25.9999694824219,
+    "name": "Label",
+    "w": 291.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/prefix/TextEdit": {
+    "gx": 25.0,
+    "gy": 427.861297607422,
+    "h": 31.0,
+    "name": "TextEdit",
+    "w": 380.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/skipplaceholders": {
+    "gx": 20.0,
+    "gy": 325.0,
+    "h": 31.0,
+    "name": "skipplaceholders",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/suffix": {
+    "gx": 20.0,
+    "gy": 399.0,
+    "h": 0.0,
+    "name": "suffix",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/suffix/Label": {
+    "gx": 26.0,
+    "gy": 475.59228515625,
+    "h": 25.9997024536133,
+    "name": "Label",
+    "w": 291.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/suffix/TextEdit": {
+    "gx": 23.8110008239746,
+    "gy": 505.592010498047,
+    "h": 31.0,
+    "name": "TextEdit",
+    "w": 380.0
+  },
+  "Pseudolocalization/Main/Pseudolocalization_options/toggle": {
+    "gx": 20.0,
+    "gy": 150.0,
+    "h": 31.0,
+    "name": "toggle",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer": {
+    "gx": 480.0,
+    "gy": 150.0,
+    "h": 490.0,
+    "name": "Pseudolocalizer",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/A2Z": {
+    "gx": 480.0,
+    "gy": 511.0,
+    "h": 129.0,
+    "name": "A2Z",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/Key": {
+    "gx": 480.0,
+    "gy": 177.0,
+    "h": 128.0,
+    "name": "Key",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/Label": {
+    "gx": 480.0,
+    "gy": 150.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/Label2": {
+    "gx": 480.0,
+    "gy": 352.0,
+    "h": 23.0,
+    "name": "Label2",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/Pseudolocalize": {
+    "gx": 638.0,
+    "gy": 313.0,
+    "h": 31.0,
+    "name": "Pseudolocalize",
+    "w": 123.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/Result": {
+    "gx": 480.0,
+    "gy": 379.0,
+    "h": 128.0,
+    "name": "Result",
+    "w": 440.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/margin": {
+    "gx": 480.0,
+    "gy": 309.0,
+    "h": 0.0,
+    "name": "margin",
+    "w": 0.0
+  },
+  "Pseudolocalization/Main/Pseudolocalizer/margin2": {
+    "gx": 480.0,
+    "gy": 348.0,
+    "h": 0.0,
+    "name": "margin2",
+    "w": 0.0
+  },
+  "Pseudolocalization/Title": {
+    "gx": 20.0,
+    "gy": 30.0,
+    "h": 100.0,
+    "name": "Title",
+    "w": 920.0
+  },
+  "Pseudolocalization/Title/Label": {
+    "gx": 152.0,
+    "gy": 59.0,
+    "h": 42.0,
+    "name": "Label",
+    "w": 788.0
+  },
+  "Pseudolocalization/Title/TextureRect": {
+    "gx": 20.0,
+    "gy": 30.0,
+    "h": 100.0,
+    "name": "TextureRect",
+    "w": 128.0
+  }
+}

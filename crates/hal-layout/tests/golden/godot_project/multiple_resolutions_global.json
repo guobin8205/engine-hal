@@ -1,0 +1,289 @@
+{
+  "Main": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "Main",
+    "w": 960.0
+  },
+  "Main/OuterSideLabel": {
+    "gx": 8.0,
+    "gy": 8.0,
+    "h": 52.0,
+    "name": "OuterSideLabel",
+    "w": 157.0
+  },
+  "Main/Panel": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "Panel",
+    "w": 960.0
+  },
+  "Main/Panel/AspectRatioContainer": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "AspectRatioContainer",
+    "w": 960.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel": {
+    "gx": 160.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "Panel",
+    "w": 640.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/BottomLeft": {
+    "gx": 160.0,
+    "gy": 640.0,
+    "h": 0.0,
+    "name": "BottomLeft",
+    "w": 0.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/BottomRight": {
+    "gx": 800.0,
+    "gy": 640.0,
+    "h": 0.0,
+    "name": "BottomRight",
+    "w": 0.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer": {
+    "gx": 160.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "CenterContainer",
+    "w": 640.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options": {
+    "gx": 282.0,
+    "gy": 160.0,
+    "h": 319.0,
+    "name": "Options",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMargin": {
+    "gx": 282.0,
+    "gy": 456.0,
+    "h": 23.0,
+    "name": "GUIMargin",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMargin/HSlider": {
+    "gx": 506.0,
+    "gy": 456.0,
+    "h": 16.0,
+    "name": "HSlider",
+    "w": 157.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMargin/Label": {
+    "gx": 282.0,
+    "gy": 456.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMargin/Value": {
+    "gx": 667.0,
+    "gy": 456.0,
+    "h": 23.0,
+    "name": "Value",
+    "w": 10.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMaxAspectRatio": {
+    "gx": 282.0,
+    "gy": 415.0,
+    "h": 31.0,
+    "name": "GUIMaxAspectRatio",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMaxAspectRatio/Label": {
+    "gx": 282.0,
+    "gy": 419.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/GUIMaxAspectRatio/OptionButton": {
+    "gx": 506.0,
+    "gy": 415.0,
+    "h": 31.0,
+    "name": "OptionButton",
+    "w": 171.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/HSeparator": {
+    "gx": 282.0,
+    "gy": 401.0,
+    "h": 4.0,
+    "name": "HSeparator",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/Title": {
+    "gx": 282.0,
+    "gy": 160.0,
+    "h": 34.0,
+    "name": "Title",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowBaseSize": {
+    "gx": 282.0,
+    "gy": 204.0,
+    "h": 31.0,
+    "name": "WindowBaseSize",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowBaseSize/Label": {
+    "gx": 282.0,
+    "gy": 208.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowBaseSize/OptionButton": {
+    "gx": 506.0,
+    "gy": 204.0,
+    "h": 31.0,
+    "name": "OptionButton",
+    "w": 171.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowScaleFactor": {
+    "gx": 282.0,
+    "gy": 327.0,
+    "h": 23.0,
+    "name": "WindowScaleFactor",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowScaleFactor/HSlider": {
+    "gx": 506.0,
+    "gy": 327.0,
+    "h": 16.0,
+    "name": "HSlider",
+    "w": 125.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowScaleFactor/Label": {
+    "gx": 282.0,
+    "gy": 327.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowScaleFactor/Value": {
+    "gx": 635.0,
+    "gy": 327.0,
+    "h": 23.0,
+    "name": "Value",
+    "w": 42.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchAspect": {
+    "gx": 282.0,
+    "gy": 286.0,
+    "h": 31.0,
+    "name": "WindowStretchAspect",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchAspect/Label": {
+    "gx": 282.0,
+    "gy": 290.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchAspect/OptionButton": {
+    "gx": 506.0,
+    "gy": 286.0,
+    "h": 31.0,
+    "name": "OptionButton",
+    "w": 171.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchMode": {
+    "gx": 282.0,
+    "gy": 245.0,
+    "h": 31.0,
+    "name": "WindowStretchMode",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchMode/Label": {
+    "gx": 282.0,
+    "gy": 249.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchMode/OptionButton": {
+    "gx": 506.0,
+    "gy": 245.0,
+    "h": 31.0,
+    "name": "OptionButton",
+    "w": 171.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchScaleMode": {
+    "gx": 282.0,
+    "gy": 360.0,
+    "h": 31.0,
+    "name": "WindowStretchScaleMode",
+    "w": 395.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchScaleMode/Label": {
+    "gx": 282.0,
+    "gy": 364.0,
+    "h": 23.0,
+    "name": "Label",
+    "w": 220.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/CenterContainer/Options/WindowStretchScaleMode/OptionButton": {
+    "gx": 506.0,
+    "gy": 360.0,
+    "h": 31.0,
+    "name": "OptionButton",
+    "w": 171.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/PixelArtCheckerboardExample": {
+    "gx": 664.0,
+    "gy": 16.0,
+    "h": 32.0,
+    "name": "PixelArtCheckerboardExample",
+    "w": 32.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/PixelArtExample": {
+    "gx": 712.0,
+    "gy": 16.0,
+    "h": 32.0,
+    "name": "PixelArtExample",
+    "w": 32.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/PixelArtExample2": {
+    "gx": 768.0,
+    "gy": 9.37258338928223,
+    "h": 32.0,
+    "name": "PixelArtExample2",
+    "w": 32.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/PixelArtTextExample": {
+    "gx": 585.0,
+    "gy": 56.0,
+    "h": 19.0,
+    "name": "PixelArtTextExample",
+    "w": 199.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/TopLeft": {
+    "gx": 160.0,
+    "gy": 0.0,
+    "h": 0.0,
+    "name": "TopLeft",
+    "w": 0.0
+  },
+  "Main/Panel/AspectRatioContainer/Panel/TopRight": {
+    "gx": 800.0,
+    "gy": 0.0,
+    "h": 0.0,
+    "name": "TopRight",
+    "w": 0.0
+  },
+  "Main/Panel/InnerSideLabel": {
+    "gx": 8.0,
+    "gy": 580.0,
+    "h": 52.0,
+    "name": "InnerSideLabel",
+    "w": 238.0
+  }
+}

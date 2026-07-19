@@ -66,8 +66,13 @@ bool AppDelegate::applicationDidFinishLaunching() {
     // 把当前工作目录显式加为搜索路径
     fileUtils->addSearchPath(".");
 
-    // POC-B2 + Phase 1: 从 control_gallery.tscn 构建 UI 布局场景
-    const char* tscn_path = "Resources/control_gallery.tscn";
+    // POC-B2 + Phase 1: 从 .tscn 构建 UI 布局场景。
+    // 默认 control_gallery，可用 HAL_SCENE 环境变量指定其他场景（多场景测试用）。
+    const char* scene_env = std::getenv("HAL_SCENE");
+    std::string tscn_path_str = (scene_env != nullptr && scene_env[0] != '\0')
+        ? std::string("Resources/") + scene_env + ".tscn"
+        : "Resources/control_gallery.tscn";
+    const char* tscn_path = tscn_path_str.c_str();
     cocos2d::log("POC-B2: 准备加载 %s", tscn_path);
 
     unsigned long long result = hal_runtime_run_tscn_scene(

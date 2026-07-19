@@ -1,0 +1,604 @@
+{
+  "ControlGallery": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "ControlGallery",
+    "w": 960.0
+  },
+  "ControlGallery/MainPanel": {
+    "gx": 0.0,
+    "gy": 0.0,
+    "h": 640.0,
+    "name": "MainPanel",
+    "w": 960.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer": {
+    "gx": -12.5,
+    "gy": -2.5,
+    "h": 645.0,
+    "name": "HSplitContainer",
+    "w": 985.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls": {
+    "gx": -12.5,
+    "gy": -2.5,
+    "h": 645.0,
+    "name": "BasicControls",
+    "w": 276.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer": {
+    "gx": -2.5,
+    "gy": 7.5,
+    "h": 625.0,
+    "name": "VBoxContainer",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/Button": {
+    "gx": -2.5,
+    "gy": 45.5,
+    "h": 31.0,
+    "name": "Button",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/CheckBox": {
+    "gx": -2.5,
+    "gy": 134.5,
+    "h": 31.0,
+    "name": "CheckBox",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/CheckButton": {
+    "gx": -2.5,
+    "gy": 169.5,
+    "h": 31.0,
+    "name": "CheckButton",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/CodeEdit": {
+    "gx": -2.5,
+    "gy": 339.5,
+    "h": 122.0,
+    "name": "CodeEdit",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/ColorPickerContainer": {
+    "gx": -2.5,
+    "gy": 107.5,
+    "h": 23.0,
+    "name": "ColorPickerContainer",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/ColorPickerContainer/ColorPickerButton": {
+    "gx": -2.5,
+    "gy": 107.5,
+    "h": 23.0,
+    "name": "ColorPickerButton",
+    "w": 58.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/ColorPickerContainer/Label": {
+    "gx": 59.5,
+    "gy": 107.5,
+    "h": 23.0,
+    "name": "Label",
+    "w": 194.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/Label": {
+    "gx": -2.5,
+    "gy": 465.5,
+    "h": 23.0,
+    "name": "Label",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/LineEdit": {
+    "gx": -2.5,
+    "gy": 204.5,
+    "h": 31.0,
+    "name": "LineEdit",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/LinkButton": {
+    "gx": -2.5,
+    "gy": 80.5,
+    "h": 23.0,
+    "name": "LinkButton",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 140.0,
+    "name": "TabContainer",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 1": {
+    "gx": -2.5,
+    "gy": 523.5,
+    "h": 109.0,
+    "name": "Tab 1",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 1/MarginContainer": {
+    "gx": -2.5,
+    "gy": 523.5,
+    "h": 109.0,
+    "name": "MarginContainer",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 1/MarginContainer/RichTextLabel": {
+    "gx": 7.5,
+    "gy": 553.5,
+    "h": 49.0,
+    "name": "RichTextLabel",
+    "w": 236.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 2": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 0.0,
+    "name": "Tab 2",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 2/MarginContainer": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 60.0,
+    "name": "MarginContainer",
+    "w": 21.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 2/MarginContainer/RichTextLabel": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 0.0,
+    "name": "RichTextLabel",
+    "w": 1.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 3": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 0.0,
+    "name": "Tab 3",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 3/MarginContainer": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 60.0,
+    "name": "MarginContainer",
+    "w": 21.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 3/MarginContainer/RichTextLabel": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 0.0,
+    "name": "RichTextLabel",
+    "w": 1.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 4": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 0.0,
+    "name": "Tab 4",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 4/MarginContainer": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 60.0,
+    "name": "MarginContainer",
+    "w": 21.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 4/MarginContainer/RichTextLabel": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 0.0,
+    "name": "RichTextLabel",
+    "w": 1.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 5": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 0.0,
+    "name": "Tab 5",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 5/MarginContainer": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 60.0,
+    "name": "MarginContainer",
+    "w": 21.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 5/MarginContainer/RichTextLabel": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 0.0,
+    "name": "RichTextLabel",
+    "w": 1.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 6": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 0.0,
+    "name": "Tab 6",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 6/MarginContainer": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 60.0,
+    "name": "MarginContainer",
+    "w": 21.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 6/MarginContainer/RichTextLabel": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 0.0,
+    "name": "RichTextLabel",
+    "w": 1.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 7": {
+    "gx": -2.5,
+    "gy": 492.5,
+    "h": 0.0,
+    "name": "Tab 7",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 7/MarginContainer": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 60.0,
+    "name": "MarginContainer",
+    "w": 21.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 7/MarginContainer/RichTextLabel": {
+    "gx": -13.0,
+    "gy": 462.5,
+    "h": 0.0,
+    "name": "RichTextLabel",
+    "w": 1.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/TextEdit": {
+    "gx": -2.5,
+    "gy": 239.5,
+    "h": 96.0,
+    "name": "TextEdit",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/BasicControls/VBoxContainer/Title": {
+    "gx": -2.5,
+    "gy": 7.5,
+    "h": 34.0,
+    "name": "Title",
+    "w": 256.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer": {
+    "gx": 271.5,
+    "gy": -2.5,
+    "h": 645.0,
+    "name": "VSplitContainer",
+    "w": 701.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer": {
+    "gx": 271.5,
+    "gy": -2.5,
+    "h": 242.0,
+    "name": "HSplitContainer",
+    "w": 701.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs": {
+    "gx": 654.5,
+    "gy": -2.5,
+    "h": 242.0,
+    "name": "Dialogs",
+    "w": 318.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer": {
+    "gx": 664.5,
+    "gy": 7.5,
+    "h": 222.0,
+    "name": "VBoxContainer",
+    "w": 298.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit": {
+    "gx": 664.5,
+    "gy": 45.5,
+    "h": 184.0,
+    "name": "GraphEdit",
+    "w": 298.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit/GraphFrame": {
+    "gx": 775.5,
+    "gy": 97.5,
+    "h": 118.0,
+    "name": "GraphFrame",
+    "w": 142.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit/GraphFrame/GraphNode": {
+    "gx": 793.5,
+    "gy": 148.5,
+    "h": 55.0,
+    "name": "GraphNode",
+    "w": 106.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit/_connection_layer": {
+    "gx": 664.5,
+    "gy": 45.5,
+    "h": 0.0,
+    "name": "_connection_layer",
+    "w": 0.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/Title": {
+    "gx": 664.5,
+    "gy": 7.5,
+    "h": 34.0,
+    "name": "Title",
+    "w": 298.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers": {
+    "gx": 271.5,
+    "gy": -2.5,
+    "h": 242.0,
+    "name": "Numbers",
+    "w": 375.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer": {
+    "gx": 281.5,
+    "gy": 7.5,
+    "h": 222.0,
+    "name": "VBoxContainer",
+    "w": 355.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer": {
+    "gx": 281.5,
+    "gy": 138.5,
+    "h": 23.0,
+    "name": "HSeparatorContainer",
+    "w": 355.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer/HSeparatorLeft": {
+    "gx": 281.5,
+    "gy": 138.5,
+    "h": 23.0,
+    "name": "HSeparatorLeft",
+    "w": 129.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer/HSeparatorRight": {
+    "gx": 507.5,
+    "gy": 138.5,
+    "h": 23.0,
+    "name": "HSeparatorRight",
+    "w": 129.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer/Label": {
+    "gx": 414.5,
+    "gy": 138.5,
+    "h": 23.0,
+    "name": "Label",
+    "w": 89.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSliderContainer": {
+    "gx": 281.5,
+    "gy": 80.5,
+    "h": 23.0,
+    "name": "HSliderContainer",
+    "w": 355.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSliderContainer/HSlider": {
+    "gx": 281.5,
+    "gy": 80.5,
+    "h": 16.0,
+    "name": "HSlider",
+    "w": 115.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSliderContainer/Label": {
+    "gx": 406.5,
+    "gy": 80.5,
+    "h": 23.0,
+    "name": "Label",
+    "w": 230.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/ProgressBarContainer": {
+    "gx": 281.5,
+    "gy": 107.5,
+    "h": 27.0,
+    "name": "ProgressBarContainer",
+    "w": 355.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/ProgressBarContainer/Label": {
+    "gx": 406.5,
+    "gy": 109.5,
+    "h": 23.0,
+    "name": "Label",
+    "w": 230.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/ProgressBarContainer/ProgressBar": {
+    "gx": 281.5,
+    "gy": 107.5,
+    "h": 27.0,
+    "name": "ProgressBar",
+    "w": 115.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/SpinBox": {
+    "gx": 281.5,
+    "gy": 45.5,
+    "h": 31.0,
+    "name": "SpinBox",
+    "w": 255.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer": {
+    "gx": 281.5,
+    "gy": 165.5,
+    "h": 64.0,
+    "name": "TextureProgressContainer",
+    "w": 355.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Control": {
+    "gx": 281.5,
+    "gy": 165.5,
+    "h": 64.0,
+    "name": "Control",
+    "w": 64.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Control/TextureProgressBar": {
+    "gx": 281.5,
+    "gy": 165.5,
+    "h": 128.0,
+    "name": "TextureProgressBar",
+    "w": 128.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Label": {
+    "gx": 349.5,
+    "gy": 185.5,
+    "h": 23.0,
+    "name": "Label",
+    "w": 154.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/Title": {
+    "gx": 281.5,
+    "gy": 7.5,
+    "h": 34.0,
+    "name": "Title",
+    "w": 355.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists": {
+    "gx": 271.5,
+    "gy": 247.5,
+    "h": 395.0,
+    "name": "Lists",
+    "w": 701.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer": {
+    "gx": 281.5,
+    "gy": 257.5,
+    "h": 375.0,
+    "name": "VBoxContainer",
+    "w": 681.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer": {
+    "gx": 281.5,
+    "gy": 295.5,
+    "h": 337.0,
+    "name": "HBoxContainer",
+    "w": 681.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer": {
+    "gx": 281.5,
+    "gy": 295.5,
+    "h": 337.0,
+    "name": "VBoxContainer",
+    "w": 333.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/ItemList": {
+    "gx": 281.5,
+    "gy": 470.5,
+    "h": 162.0,
+    "name": "ItemList",
+    "w": 333.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/MenuButton": {
+    "gx": 281.5,
+    "gy": 330.5,
+    "h": 31.0,
+    "name": "MenuButton",
+    "w": 150.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton": {
+    "gx": 281.5,
+    "gy": 295.5,
+    "h": 31.0,
+    "name": "OptionButton",
+    "w": 139.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons": {
+    "gx": 281.5,
+    "gy": 365.5,
+    "h": 101.0,
+    "name": "RadioButtons",
+    "w": 333.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons/CheckBox": {
+    "gx": 281.5,
+    "gy": 365.5,
+    "h": 31.0,
+    "name": "CheckBox",
+    "w": 333.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons/CheckBox2": {
+    "gx": 281.5,
+    "gy": 400.5,
+    "h": 31.0,
+    "name": "CheckBox2",
+    "w": 333.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons/CheckBox3": {
+    "gx": 281.5,
+    "gy": 435.5,
+    "h": 31.0,
+    "name": "CheckBox3",
+    "w": 333.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2": {
+    "gx": 624.5,
+    "gy": 295.5,
+    "h": 337.0,
+    "name": "VBoxContainer2",
+    "w": 338.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer": {
+    "gx": 624.5,
+    "gy": 499.5,
+    "h": 98.0,
+    "name": "FoldableContainer",
+    "w": 338.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer/MarginContainer": {
+    "gx": 628.5,
+    "gy": 534.5,
+    "h": 59.0,
+    "name": "MarginContainer",
+    "w": 330.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer/MarginContainer/Label": {
+    "gx": 638.5,
+    "gy": 539.5,
+    "h": 49.0,
+    "name": "Label",
+    "w": 310.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer2": {
+    "gx": 624.5,
+    "gy": 601.5,
+    "h": 31.0,
+    "name": "FoldableContainer2",
+    "w": 338.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer2/MarginContainer2": {
+    "gx": 624.5,
+    "gy": 601.5,
+    "h": 59.0,
+    "name": "MarginContainer2",
+    "w": 235.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer2/MarginContainer2/Label": {
+    "gx": 624.5,
+    "gy": 601.5,
+    "h": 49.0,
+    "name": "Label",
+    "w": 215.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/Tree": {
+    "gx": 624.5,
+    "gy": 295.5,
+    "h": 200.0,
+    "name": "Tree",
+    "w": 338.0
+  },
+  "ControlGallery/MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/Title": {
+    "gx": 281.5,
+    "gy": 257.5,
+    "h": 34.0,
+    "name": "Title",
+    "w": 681.0
+  }
+}
