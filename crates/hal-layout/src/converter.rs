@@ -191,10 +191,20 @@ fn extract_container(node: &SceneNode) -> Option<ContainerType> {
         "CenterContainer" | "Center" => Some(ContainerType::Center),
         // PanelContainer: 子节点全填满（类似 Margin=0）
         "PanelContainer" => Some(ContainerType::Margin { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 }),
-        // HSplitContainer: 近似为 HBox（split offset 固定时行为相同）
-        "HSplitContainer" => Some(ContainerType::HBox { separation: separation.max(4.0) }),
-        // VSplitContainer: 近似为 VBox
-        "VSplitContainer" => Some(ContainerType::VBox { separation: separation.max(4.0) }),
+        // HSplitContainer: 用 split_offset 固定第一个子节点宽度
+        "HSplitContainer" => {
+            let split = get_f32(node, "split_offset")
+                .or_else(|| get_int(node, "split_offset").map(|i| i as f32))
+                .unwrap_or(0.0);
+            Some(ContainerType::HSplit { separation: separation.max(4.0), split_offset: split })
+        }
+        // VSplitContainer: 用 split_offset 固定第一个子节点高度
+        "VSplitContainer" => {
+            let split = get_f32(node, "split_offset")
+                .or_else(|| get_int(node, "split_offset").map(|i| i as f32))
+                .unwrap_or(0.0);
+            Some(ContainerType::VSplit { separation: separation.max(4.0), split_offset: split })
+        }
         // TabContainer: 只显示第一个子节点（当前 tab），近似为只有一个子的 VBox
         "TabContainer" => Some(ContainerType::Margin { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 }),
         // FoldableContainer: 近似为 VBox（折叠时子节点不可见，但布局上仍占位）
@@ -304,6 +314,8 @@ mod tests {
                 Some(ContainerType::HBox { .. }) => "HBox",
                 Some(ContainerType::VBox { .. }) => "VBox",
                 Some(ContainerType::Margin { .. }) => "Margin",
+                Some(ContainerType::HSplit { .. }) => "HSplit",
+                Some(ContainerType::VSplit { .. }) => "VSplit",
                 Some(ContainerType::Center) => "Center",
                 None => "None",
             };

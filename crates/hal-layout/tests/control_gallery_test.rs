@@ -57,6 +57,8 @@ fn control_gallery_containers_detected() {
                 ContainerType::HBox { .. } => *hbox += 1,
                 ContainerType::VBox { .. } => *vbox += 1,
                 ContainerType::Margin { .. } => *margin += 1,
+                ContainerType::HSplit { .. } => *hbox += 1,
+                ContainerType::VSplit { .. } => *vbox += 1,
                 ContainerType::Center => {}
             }
         }

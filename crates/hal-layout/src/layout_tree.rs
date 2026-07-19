@@ -83,6 +83,10 @@ pub enum ContainerType {
     Margin { left: f32, top: f32, right: f32, bottom: f32 },
     /// CenterContainer：子节点居中
     Center,
+    /// HSplitContainer：水平分割（split_offset 固定第一个子节点宽度）
+    HSplit { separation: f32, split_offset: f32 },
+    /// VSplitContainer：垂直分割
+    VSplit { separation: f32, split_offset: f32 },
 }
 
 /// 节点的计算结果（Godot 坐标系：左上角原点，Y 向下）。
@@ -152,7 +156,6 @@ impl LayoutNode {
 
         match container {
             ContainerType::Center => {
-                // 子节点居中（假设唯一子节点，否则按 Godot 行为只布局第一个）
                 if let Some(child) = self.children.first_mut() {
                     let child_min = child.combined_min_size();
                     let cx = (my_size.width - child_min.width) / 2.0;
@@ -160,6 +163,52 @@ impl LayoutNode {
                     child.computed.position = (cx, cy);
                     child.computed.size = child_min;
                     child.layout_children();
+                }
+            }
+            ContainerType::HSplit { separation, split_offset } => {
+                // HSplitContainer：第一个子节点宽度 = split_offset
+                // 第二个子节点占剩余宽度
+                let n = self.children.len();
+                if n >= 1 {
+                    let first_w = split_offset.max(0.0);
+                    let rest_w = (my_size.width - first_w - separation * (n as f32 - 1.0)).max(0.0);
+
+                    // 第一个子节点
+                    let child = &mut self.children[0];
+                    child.computed.position = (0.0, 0.0);
+                    child.computed.size = Size::new(first_w, my_size.height);
+                    child.layout_children();
+
+                    // 后续子节点瓜分剩余宽度
+                    let mut x = first_w + separation;
+                    let rest_per_child = if n > 1 { rest_w / (n as f32 - 1.0) } else { 0.0 };
+                    for child in self.children.iter_mut().skip(1) {
+                        child.computed.position = (x, 0.0);
+                        child.computed.size = Size::new(rest_per_child, my_size.height);
+                        child.layout_children();
+                        x += rest_per_child + separation;
+                    }
+                }
+            }
+            ContainerType::VSplit { separation, split_offset } => {
+                let n = self.children.len();
+                if n >= 1 {
+                    let first_h = split_offset.max(0.0);
+                    let rest_h = (my_size.height - first_h - separation * (n as f32 - 1.0)).max(0.0);
+
+                    let child = &mut self.children[0];
+                    child.computed.position = (0.0, 0.0);
+                    child.computed.size = Size::new(my_size.width, first_h);
+                    child.layout_children();
+
+                    let mut y = first_h + separation;
+                    let rest_per_child = if n > 1 { rest_h / (n as f32 - 1.0) } else { 0.0 };
+                    for child in self.children.iter_mut().skip(1) {
+                        child.computed.position = (0.0, y);
+                        child.computed.size = Size::new(my_size.width, rest_per_child);
+                        child.layout_children();
+                        y += rest_per_child + separation;
+                    }
                 }
             }
             ContainerType::Margin { left, top, right, bottom } => {
@@ -328,6 +377,16 @@ impl LayoutNode {
                     } else {
                         Size::ZERO
                     }
+                }
+                ContainerType::HSplit { separation, .. } | ContainerType::VSplit { separation, .. } => {
+                    // Split 的 min_size 和 Box 类似
+                    let n = self.children.len();
+                    let total: Size = self.children.iter().fold(Size::ZERO, |acc, c| {
+                        let cm = c.combined_min_size();
+                        Size::new(acc.width + cm.width, acc.height.max(cm.height))
+                    });
+                    let sep_total = if n > 0 { separation * (n as f32 - 1.0) } else { 0.0 };
+                    Size::new(total.width + sep_total, total.height)
                 }
             }
         } else {
