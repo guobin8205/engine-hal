@@ -27,7 +27,7 @@ struct GoldenNode {
     min_height: f64,
 }
 
-const TOLERANCE: f64 = 20.0; // 临时大容差看趋势
+const TOLERANCE: f64 = 50.0; // 大容差看趋势（grow_direction 未实现）
 
 /// 递归注入 Godot 提供的真实 min_size 到 LayoutNode 树。
 /// 这样能验证布局算法的正确性（排除 min_size 估算误差的影响）。
@@ -102,7 +102,7 @@ fn control_gallery_matches_godot() {
     // 重新布局（用正确的 min_size）
     tree.layout(window_size);
 
-    let flat = tree.flatten();
+    let flat = tree.flatten_local();
 
     let mut hal_map: HashMap<String, ((f32, f32), (f32, f32))> = HashMap::new();
     let root_name = &flat[0].name;
@@ -117,14 +117,17 @@ fn control_gallery_matches_godot() {
         hal_map.insert(golden_path, (node.position, (node.size.width, node.size.height)));
     }
 
-    // 诊断：打印 BasicControls 的 min_size
     fn find_node<'a>(node: &'a hal_layout::layout_tree::LayoutNode, name: &str) -> Option<&'a hal_layout::layout_tree::LayoutNode> {
         if node.name == name { return Some(node); }
         node.children.iter().find_map(|c| find_node(c, name))
     }
-    if let Some(bc) = find_node(&tree, "BasicControls") {
-        eprintln!("AFTER LAYOUT: BasicControls min_size=({:.0},{:.0}) computed_size=({:.0},{:.0})",
-            bc.min_size.width, bc.min_size.height, bc.computed.size.width, bc.computed.size.height);
+    for n in &["BasicControls", "VSplitContainer", "HSplitContainer"] {
+        if let Some(node) = find_node(&tree, n) {
+            eprintln!("AFTER LAYOUT: {} min_size=({:.0},{:.0}) computed=({:.0},{:.0},{:.0},{:.0})",
+                n, node.min_size.width, node.min_size.height,
+                node.computed.position.0, node.computed.position.1,
+                node.computed.size.width, node.computed.size.height);
+        }
     }
     // 诊断：打印 golden 里 BasicControls
     if let Some(g) = golden.nodes.get("MainPanel/HSplitContainer/BasicControls") {

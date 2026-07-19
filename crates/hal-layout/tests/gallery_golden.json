@@ -32,8 +32,8 @@
     "min_width": 276.0,
     "name": "BasicControls",
     "width": 276.0,
-    "x": -12.5,
-    "y": -2.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer": {
     "height": 625.0,
@@ -41,8 +41,8 @@
     "min_width": 256.0,
     "name": "VBoxContainer",
     "width": 256.0,
-    "x": -2.5,
-    "y": 7.5
+    "x": 10.0,
+    "y": 10.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/Button": {
     "height": 31.0,
@@ -50,8 +50,8 @@
     "min_width": 62.0,
     "name": "Button",
     "width": 256.0,
-    "x": -2.5,
-    "y": 45.5
+    "x": 0.0,
+    "y": 38.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/CheckBox": {
     "height": 31.0,
@@ -59,8 +59,8 @@
     "min_width": 104.0,
     "name": "CheckBox",
     "width": 256.0,
-    "x": -2.5,
-    "y": 134.5
+    "x": 0.0,
+    "y": 127.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/CheckButton": {
     "height": 31.0,
@@ -68,8 +68,8 @@
     "min_width": 148.0,
     "name": "CheckButton",
     "width": 256.0,
-    "x": -2.5,
-    "y": 169.5
+    "x": 0.0,
+    "y": 162.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/CodeEdit": {
     "height": 122.0,
@@ -77,8 +77,8 @@
     "min_width": 8.0,
     "name": "CodeEdit",
     "width": 256.0,
-    "x": -2.5,
-    "y": 339.5
+    "x": 0.0,
+    "y": 332.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/ColorPickerContainer": {
     "height": 23.0,
@@ -86,8 +86,8 @@
     "min_width": 154.0,
     "name": "ColorPickerContainer",
     "width": 256.0,
-    "x": -2.5,
-    "y": 107.5
+    "x": 0.0,
+    "y": 100.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/ColorPickerContainer/ColorPickerButton": {
     "height": 23.0,
@@ -95,8 +95,8 @@
     "min_width": 8.0,
     "name": "ColorPickerButton",
     "width": 58.0,
-    "x": -2.5,
-    "y": 107.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/ColorPickerContainer/Label": {
     "height": 23.0,
@@ -104,8 +104,8 @@
     "min_width": 142.0,
     "name": "Label",
     "width": 194.0,
-    "x": 59.5,
-    "y": 107.5
+    "x": 62.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/Label": {
     "height": 23.0,
@@ -113,8 +113,8 @@
     "min_width": 42.0,
     "name": "Label",
     "width": 256.0,
-    "x": -2.5,
-    "y": 465.5
+    "x": 0.0,
+    "y": 458.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/LineEdit": {
     "height": 31.0,
@@ -122,8 +122,8 @@
     "min_width": 68.5,
     "name": "LineEdit",
     "width": 256.0,
-    "x": -2.5,
-    "y": 204.5
+    "x": 0.0,
+    "y": 197.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/LinkButton": {
     "height": 23.0,
@@ -131,8 +131,8 @@
     "min_width": 256.0,
     "name": "LinkButton",
     "width": 256.0,
-    "x": -2.5,
-    "y": 80.5
+    "x": 0.0,
+    "y": 73.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer": {
     "height": 140.0,
@@ -140,8 +140,8 @@
     "min_width": 102.0,
     "name": "TabContainer",
     "width": 256.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 485.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 1": {
     "height": 109.0,
@@ -149,8 +149,8 @@
     "min_width": 0.0,
     "name": "Tab 1",
     "width": 256.0,
-    "x": -2.5,
-    "y": 523.5
+    "x": 0.0,
+    "y": 31.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 1/MarginContainer": {
     "height": 109.0,
@@ -158,8 +158,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 256.0,
-    "x": -2.5,
-    "y": 523.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 1/MarginContainer/RichTextLabel": {
     "height": 49.0,
@@ -167,8 +167,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 236.0,
-    "x": 7.5,
-    "y": 553.5
+    "x": 10.0,
+    "y": 30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 2": {
     "height": 0.0,
@@ -176,8 +176,8 @@
     "min_width": 0.0,
     "name": "Tab 2",
     "width": 0.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 2/MarginContainer": {
     "height": 60.0,
@@ -185,8 +185,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 21.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": -10.5,
+    "y": -30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 2/MarginContainer/RichTextLabel": {
     "height": 0.0,
@@ -194,8 +194,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 1.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 3": {
     "height": 0.0,
@@ -203,8 +203,8 @@
     "min_width": 0.0,
     "name": "Tab 3",
     "width": 0.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 3/MarginContainer": {
     "height": 60.0,
@@ -212,8 +212,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 21.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": -10.5,
+    "y": -30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 3/MarginContainer/RichTextLabel": {
     "height": 0.0,
@@ -221,8 +221,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 1.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 4": {
     "height": 0.0,
@@ -230,8 +230,8 @@
     "min_width": 0.0,
     "name": "Tab 4",
     "width": 0.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 4/MarginContainer": {
     "height": 60.0,
@@ -239,8 +239,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 21.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": -10.5,
+    "y": -30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 4/MarginContainer/RichTextLabel": {
     "height": 0.0,
@@ -248,8 +248,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 1.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 5": {
     "height": 0.0,
@@ -257,8 +257,8 @@
     "min_width": 0.0,
     "name": "Tab 5",
     "width": 0.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 5/MarginContainer": {
     "height": 60.0,
@@ -266,8 +266,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 21.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": -10.5,
+    "y": -30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 5/MarginContainer/RichTextLabel": {
     "height": 0.0,
@@ -275,8 +275,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 1.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 6": {
     "height": 0.0,
@@ -284,8 +284,8 @@
     "min_width": 0.0,
     "name": "Tab 6",
     "width": 0.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 6/MarginContainer": {
     "height": 60.0,
@@ -293,8 +293,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 21.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": -10.5,
+    "y": -30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 6/MarginContainer/RichTextLabel": {
     "height": 0.0,
@@ -302,8 +302,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 1.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 7": {
     "height": 0.0,
@@ -311,8 +311,8 @@
     "min_width": 0.0,
     "name": "Tab 7",
     "width": 0.0,
-    "x": -2.5,
-    "y": 492.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 7/MarginContainer": {
     "height": 60.0,
@@ -320,8 +320,8 @@
     "min_width": 21.0,
     "name": "MarginContainer",
     "width": 21.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": -10.5,
+    "y": -30.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TabContainer/Tab 7/MarginContainer/RichTextLabel": {
     "height": 0.0,
@@ -329,8 +329,8 @@
     "min_width": 1.0,
     "name": "RichTextLabel",
     "width": 1.0,
-    "x": -13.0,
-    "y": 462.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/TextEdit": {
     "height": 96.0,
@@ -338,8 +338,8 @@
     "min_width": 8.0,
     "name": "TextEdit",
     "width": 256.0,
-    "x": -2.5,
-    "y": 239.5
+    "x": 0.0,
+    "y": 232.0
   },
   "MainPanel/HSplitContainer/BasicControls/VBoxContainer/Title": {
     "height": 34.0,
@@ -347,8 +347,8 @@
     "min_width": 161.0,
     "name": "Title",
     "width": 256.0,
-    "x": -2.5,
-    "y": 7.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer": {
     "height": 645.0,
@@ -356,8 +356,8 @@
     "min_width": 701.0,
     "name": "VSplitContainer",
     "width": 701.0,
-    "x": 271.5,
-    "y": -2.5
+    "x": 284.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer": {
     "height": 242.0,
@@ -365,8 +365,8 @@
     "min_width": 419.0,
     "name": "HSplitContainer",
     "width": 701.0,
-    "x": 271.5,
-    "y": -2.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs": {
     "height": 242.0,
@@ -374,8 +374,8 @@
     "min_width": 136.0,
     "name": "Dialogs",
     "width": 318.0,
-    "x": 654.5,
-    "y": -2.5
+    "x": 383.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer": {
     "height": 222.0,
@@ -383,8 +383,8 @@
     "min_width": 116.0,
     "name": "VBoxContainer",
     "width": 298.0,
-    "x": 664.5,
-    "y": 7.5
+    "x": 10.0,
+    "y": 10.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit": {
     "height": 184.0,
@@ -392,8 +392,8 @@
     "min_width": 0.0,
     "name": "GraphEdit",
     "width": 298.0,
-    "x": 664.5,
-    "y": 45.5
+    "x": 0.0,
+    "y": 38.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit/GraphFrame": {
     "height": 118.0,
@@ -401,8 +401,8 @@
     "min_width": 142.0,
     "name": "GraphFrame",
     "width": 142.0,
-    "x": 775.5,
-    "y": 97.5
+    "x": 111.0,
+    "y": 52.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit/GraphFrame/GraphNode": {
     "height": 55.0,
@@ -410,8 +410,8 @@
     "min_width": 98.0,
     "name": "GraphNode",
     "width": 106.0,
-    "x": 793.5,
-    "y": 148.5
+    "x": 18.0,
+    "y": 51.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/GraphEdit/_connection_layer": {
     "height": 0.0,
@@ -419,8 +419,8 @@
     "min_width": 0.0,
     "name": "_connection_layer",
     "width": 0.0,
-    "x": 664.5,
-    "y": 45.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Dialogs/VBoxContainer/Title": {
     "height": 34.0,
@@ -428,8 +428,8 @@
     "min_width": 116.0,
     "name": "Title",
     "width": 298.0,
-    "x": 664.5,
-    "y": 7.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers": {
     "height": 242.0,
@@ -437,8 +437,8 @@
     "min_width": 275.0,
     "name": "Numbers",
     "width": 375.0,
-    "x": 271.5,
-    "y": -2.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer": {
     "height": 222.0,
@@ -446,8 +446,8 @@
     "min_width": 255.0,
     "name": "VBoxContainer",
     "width": 355.0,
-    "x": 281.5,
-    "y": 7.5
+    "x": 10.0,
+    "y": 10.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer": {
     "height": 23.0,
@@ -455,8 +455,8 @@
     "min_width": 103.0,
     "name": "HSeparatorContainer",
     "width": 355.0,
-    "x": 281.5,
-    "y": 138.5
+    "x": 0.0,
+    "y": 131.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer/HSeparatorLeft": {
     "height": 23.0,
@@ -464,8 +464,8 @@
     "min_width": 3.0,
     "name": "HSeparatorLeft",
     "width": 129.0,
-    "x": 281.5,
-    "y": 138.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer/HSeparatorRight": {
     "height": 23.0,
@@ -473,8 +473,8 @@
     "min_width": 3.0,
     "name": "HSeparatorRight",
     "width": 129.0,
-    "x": 507.5,
-    "y": 138.5
+    "x": 226.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSeparatorContainer/Label": {
     "height": 23.0,
@@ -482,8 +482,8 @@
     "min_width": 89.0,
     "name": "Label",
     "width": 89.0,
-    "x": 414.5,
-    "y": 138.5
+    "x": 133.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSliderContainer": {
     "height": 23.0,
@@ -491,8 +491,8 @@
     "min_width": 74.0,
     "name": "HSliderContainer",
     "width": 355.0,
-    "x": 281.5,
-    "y": 80.5
+    "x": 0.0,
+    "y": 73.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSliderContainer/HSlider": {
     "height": 16.0,
@@ -500,8 +500,8 @@
     "min_width": 8.0,
     "name": "HSlider",
     "width": 115.0,
-    "x": 281.5,
-    "y": 80.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/HSliderContainer/Label": {
     "height": 23.0,
@@ -509,8 +509,8 @@
     "min_width": 56.0,
     "name": "Label",
     "width": 230.0,
-    "x": 406.5,
-    "y": 80.5
+    "x": 125.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/ProgressBarContainer": {
     "height": 27.0,
@@ -518,8 +518,8 @@
     "min_width": 108.0,
     "name": "ProgressBarContainer",
     "width": 355.0,
-    "x": 281.5,
-    "y": 107.5
+    "x": 0.0,
+    "y": 100.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/ProgressBarContainer/Label": {
     "height": 23.0,
@@ -527,8 +527,8 @@
     "min_width": 94.0,
     "name": "Label",
     "width": 230.0,
-    "x": 406.5,
-    "y": 109.5
+    "x": 125.0,
+    "y": 2.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/ProgressBarContainer/ProgressBar": {
     "height": 27.0,
@@ -536,8 +536,8 @@
     "min_width": 4.0,
     "name": "ProgressBar",
     "width": 115.0,
-    "x": 281.5,
-    "y": 107.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/SpinBox": {
     "height": 31.0,
@@ -545,8 +545,8 @@
     "min_width": 255.0,
     "name": "SpinBox",
     "width": 255.0,
-    "x": 281.5,
-    "y": 45.5
+    "x": 0.0,
+    "y": 38.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer": {
     "height": 64.0,
@@ -554,8 +554,8 @@
     "min_width": 222.0,
     "name": "TextureProgressContainer",
     "width": 355.0,
-    "x": 281.5,
-    "y": 165.5
+    "x": 0.0,
+    "y": 158.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Control": {
     "height": 64.0,
@@ -563,17 +563,17 @@
     "min_width": 64.0,
     "name": "Control",
     "width": 64.0,
-    "x": 281.5,
-    "y": 165.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Control/TextureProgressBar": {
-    "height": 64.0,
+    "height": 128.0,
     "min_height": 1.0,
     "min_width": 1.0,
     "name": "TextureProgressBar",
-    "width": 64.0,
-    "x": 281.5,
-    "y": 165.5
+    "width": 128.0,
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/TextureProgressContainer/Label": {
     "height": 23.0,
@@ -581,8 +581,8 @@
     "min_width": 154.0,
     "name": "Label",
     "width": 154.0,
-    "x": 349.5,
-    "y": 185.5
+    "x": 68.0,
+    "y": 20.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/HSplitContainer/Numbers/VBoxContainer/Title": {
     "height": 34.0,
@@ -590,8 +590,8 @@
     "min_width": 108.0,
     "name": "Title",
     "width": 355.0,
-    "x": 281.5,
-    "y": 7.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists": {
     "height": 395.0,
@@ -599,8 +599,8 @@
     "min_width": 701.0,
     "name": "Lists",
     "width": 701.0,
-    "x": 271.5,
-    "y": 247.5
+    "x": 0.0,
+    "y": 250.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer": {
     "height": 375.0,
@@ -608,8 +608,8 @@
     "min_width": 681.0,
     "name": "VBoxContainer",
     "width": 681.0,
-    "x": 281.5,
-    "y": 257.5
+    "x": 10.0,
+    "y": 10.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer": {
     "height": 337.0,
@@ -617,8 +617,8 @@
     "min_width": 681.0,
     "name": "HBoxContainer",
     "width": 681.0,
-    "x": 281.5,
-    "y": 295.5
+    "x": 0.0,
+    "y": 38.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer": {
     "height": 337.0,
@@ -626,8 +626,8 @@
     "min_width": 333.0,
     "name": "VBoxContainer",
     "width": 333.0,
-    "x": 281.5,
-    "y": 295.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/ItemList": {
     "height": 162.0,
@@ -635,8 +635,8 @@
     "min_width": 0.0,
     "name": "ItemList",
     "width": 333.0,
-    "x": 281.5,
-    "y": 470.5
+    "x": 0.0,
+    "y": 175.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/MenuButton": {
     "height": 31.0,
@@ -644,8 +644,8 @@
     "min_width": 150.0,
     "name": "MenuButton",
     "width": 150.0,
-    "x": 281.5,
-    "y": 330.5
+    "x": 0.0,
+    "y": 35.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/OptionButton": {
     "height": 31.0,
@@ -653,8 +653,8 @@
     "min_width": 139.0,
     "name": "OptionButton",
     "width": 139.0,
-    "x": 281.5,
-    "y": 295.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons": {
     "height": 101.0,
@@ -662,8 +662,8 @@
     "min_width": 333.0,
     "name": "RadioButtons",
     "width": 333.0,
-    "x": 281.5,
-    "y": 365.5
+    "x": 0.0,
+    "y": 70.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons/CheckBox": {
     "height": 31.0,
@@ -671,8 +671,8 @@
     "min_width": 333.0,
     "name": "CheckBox",
     "width": 333.0,
-    "x": 281.5,
-    "y": 365.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons/CheckBox2": {
     "height": 31.0,
@@ -680,8 +680,8 @@
     "min_width": 333.0,
     "name": "CheckBox2",
     "width": 333.0,
-    "x": 281.5,
-    "y": 400.5
+    "x": 0.0,
+    "y": 35.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer/RadioButtons/CheckBox3": {
     "height": 31.0,
@@ -689,8 +689,8 @@
     "min_width": 333.0,
     "name": "CheckBox3",
     "width": 333.0,
-    "x": 281.5,
-    "y": 435.5
+    "x": 0.0,
+    "y": 70.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2": {
     "height": 337.0,
@@ -698,8 +698,8 @@
     "min_width": 338.0,
     "name": "VBoxContainer2",
     "width": 338.0,
-    "x": 624.5,
-    "y": 295.5
+    "x": 343.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer": {
     "height": 98.0,
@@ -707,8 +707,8 @@
     "min_width": 338.0,
     "name": "FoldableContainer",
     "width": 338.0,
-    "x": 624.5,
-    "y": 499.5
+    "x": 0.0,
+    "y": 204.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer/MarginContainer": {
     "height": 59.0,
@@ -716,8 +716,8 @@
     "min_width": 330.0,
     "name": "MarginContainer",
     "width": 330.0,
-    "x": 628.5,
-    "y": 534.5
+    "x": 4.0,
+    "y": 35.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer/MarginContainer/Label": {
     "height": 49.0,
@@ -725,8 +725,8 @@
     "min_width": 310.0,
     "name": "Label",
     "width": 310.0,
-    "x": 638.5,
-    "y": 539.5
+    "x": 10.0,
+    "y": 5.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer2": {
     "height": 31.0,
@@ -734,8 +734,8 @@
     "min_width": 325.0,
     "name": "FoldableContainer2",
     "width": 338.0,
-    "x": 624.5,
-    "y": 601.5
+    "x": 0.0,
+    "y": 306.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer2/MarginContainer2": {
     "height": 59.0,
@@ -743,8 +743,8 @@
     "min_width": 235.0,
     "name": "MarginContainer2",
     "width": 235.0,
-    "x": 624.5,
-    "y": 601.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/FoldableContainer2/MarginContainer2/Label": {
     "height": 49.0,
@@ -752,8 +752,8 @@
     "min_width": 215.0,
     "name": "Label",
     "width": 215.0,
-    "x": 624.5,
-    "y": 601.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/HBoxContainer/VBoxContainer2/Tree": {
     "height": 200.0,
@@ -761,8 +761,8 @@
     "min_width": 16.0,
     "name": "Tree",
     "width": 338.0,
-    "x": 624.5,
-    "y": 295.5
+    "x": 0.0,
+    "y": 0.0
   },
   "MainPanel/HSplitContainer/VSplitContainer/Lists/VBoxContainer/Title": {
     "height": 34.0,
@@ -770,7 +770,7 @@
     "min_width": 53.0,
     "name": "Title",
     "width": 681.0,
-    "x": 281.5,
-    "y": 257.5
+    "x": 0.0,
+    "y": 0.0
   }
 }

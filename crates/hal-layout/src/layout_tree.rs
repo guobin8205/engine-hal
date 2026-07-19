@@ -465,7 +465,13 @@ impl LayoutNode {
 
     /// 计算节点的最小尺寸（递归）。
     /// 普通节点返回 min_size；容器节点累加子节点最小尺寸。
+    /// 如果 min_size 被显式设过（非 0），优先用它（inject 模式）。
     pub fn combined_min_size(&self) -> Size {
+        // 如果有显式 min_size（非 0），直接用（inject 模式或 custom_minimum_size）
+        if self.min_size.width > 0.0 || self.min_size.height > 0.0 {
+            return self.min_size;
+        }
+
         if let Some(container) = self.container {
             match container {
                 ContainerType::HBox { separation } => {
@@ -523,6 +529,26 @@ impl LayoutNode {
         let mut out = Vec::new();
         self.flatten_into(&mut out, (0.0, 0.0), &self.name);
         out
+    }
+
+    /// 收集所有节点，输出**局部坐标**（相对父节点的 position），用于和 Godot 的 position 属性对比。
+    pub fn flatten_local(&self) -> Vec<FlatNode> {
+        let mut out = Vec::new();
+        self.flatten_local_into(&mut out, &self.name);
+        out
+    }
+
+    fn flatten_local_into(&self, out: &mut Vec<FlatNode>, path: &str) {
+        out.push(FlatNode {
+            name: self.name.clone(),
+            path: path.to_string(),
+            position: self.computed.position, // 局部坐标（相对父节点）
+            size: self.computed.size,
+        });
+        for child in &self.children {
+            let child_path = format!("{}/{}", path, child.name);
+            child.flatten_local_into(out, &child_path);
+        }
     }
 
     fn flatten_into(&self, out: &mut Vec<FlatNode>, parent_global: (f32, f32), path: &str) {
