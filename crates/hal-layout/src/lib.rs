@@ -30,4 +30,5 @@
 //! - `layout_tree`: 布局树 + dirty-flag 调度
 
 pub mod anchor;
+pub mod converter;
 pub mod layout_tree;
