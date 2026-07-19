@@ -196,7 +196,15 @@ fn create_label_node(node: &SceneNode) -> Option<u64> {
 const WINDOW_HEIGHT: f32 = 640.0;
 
 fn apply_common_props(handle: u64, node: &SceneNode) {
-    // position: Vector2(x, y) — 需要翻转 Y 轴
+    // position: Vector2(x, y) — 需要翻转 Y 轴（Godot Y 向下，Cocos Y 向上）
+    //
+    // 注意（Phase 1 待解决）：Label 节点在 Godot 里用 offset_left/top/right/bottom
+    // 表达位置，position 是衍生属性。Cocos Label 的 anchor point 默认是 (0.5, 0.5)
+    // 中心对齐，和 Godot 的左上角对齐不同，会导致位置整体偏移。
+    // 完整的 UI 精确布局需要处理：
+    //   - offset_* → position 的精确转换
+    //   - anchor point 映射
+    //   - 实际窗口尺寸 vs designResolutionSize
     if let Some(Variant::Vector2(v)) =
         node.props.iter().find(|(k, _)| k == "position").map(|(_, v)| v)
     {
