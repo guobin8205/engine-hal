@@ -28,6 +28,7 @@ std::unordered_map<uint64_t, cocos2d::Node*> g_registry;
 std::atomic<uint64_t> g_next_handle{1};
 
 // 注册一个 Node*，返回句柄。内部会 retain（C++ 持有所有权）。
+// 同时把 handle 写入 node->setTag，供 hal_export_scene_nodes 反查 handle。
 uint64_t register_node(cocos2d::Node* node) {
     if (node == nullptr) {
         return 0;
@@ -36,6 +37,8 @@ uint64_t register_node(cocos2d::Node* node) {
     uint64_t handle = g_next_handle.fetch_add(1);
     std::lock_guard<std::mutex> lock(g_registry_mutex);
     g_registry[handle] = node;
+    // 用 tag 存 handle（int 范围足够，handle 从 1 开始单调递增）
+    node->setTag((int)handle);
     return handle;
 }
 
@@ -193,6 +196,59 @@ uint64_t hal_color_rect_create(float width, float height, HalColor color) {
     }
     // LayerColor 的 anchor point 默认是 (0, 0)，即左下角
     return register_node(rect);
+}
+
+// ============ 导出（验证用） ============
+
+// 导出 scene 下所有直接子节点的实际坐标/尺寸到 JSON 文件。
+// 每个 child 用 getTag() 反查 handle，输出 {handle, x, y, w, h}。
+// 和 Rust 侧的 cocos_export_expected.json（含 path + 期望坐标）用 handle 关联，
+// 供 hal-verify 工具对比验证翻译层 + cxx 桥接是否准确。
+void hal_export_scene_nodes(uint64_t scene_handle, const std::string& out_path) {
+    cocos2d::Node* scene = lookup_node(scene_handle);
+    if (scene == nullptr) {
+        cocos2d::log("hal_export_scene_nodes: scene handle %llu 无效", (unsigned long long)scene_handle);
+        return;
+    }
+
+    std::string json = "[\n";
+    bool first = true;
+    // 遍历 scene 的直接子节点（ColorRect 都平铺在 scene 根下）
+    const auto& children = scene->getChildren();
+    for (const auto& child : children) {
+        if (child == nullptr) {
+            continue;
+        }
+        int handle = child->getTag();
+        // 跳过非 hal 创建的节点（Cocos 自动加的 Camera 等，tag=-1）
+        if (handle < 0) {
+            continue;
+        }
+        cocos2d::Vec2 pos = child->getPosition();
+        cocos2d::Size sz = child->getContentSize();
+
+        if (!first) {
+            json += ",\n";
+        }
+        first = false;
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+            "  {\"handle\": %d, \"x\": %.1f, \"y\": %.1f, \"w\": %.1f, \"h\": %.1f}",
+            handle, pos.x, pos.y, sz.width, sz.height);
+        json += buf;
+    }
+    json += "\n]\n";
+
+    // 写文件（相对 working directory）
+    FILE* f = fopen(out_path.c_str(), "wb");
+    if (f == nullptr) {
+        cocos2d::log("hal_export_scene_nodes: 无法写 %s", out_path.c_str());
+        return;
+    }
+    fwrite(json.c_str(), 1, json.size(), f);
+    fclose(f);
+    cocos2d::log("hal_export_scene_nodes: 写 %s 成功，%d 个子节点",
+        out_path.c_str(), (int)children.size());
 }
 
 // ============ 调试 ============

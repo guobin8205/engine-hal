@@ -107,4 +107,9 @@ void cxxbridge1$197$hal_node_set_color(::std::uint64_t handle, ::HalColor *color
   ::std::size_t (*hal_node_registry_count$)() = ::hal_node_registry_count;
   return hal_node_registry_count$();
 }
+
+void cxxbridge1$197$hal_export_scene_nodes(::std::uint64_t scene, ::std::string const &out_path) noexcept {
+  void (*hal_export_scene_nodes$)(::std::uint64_t, ::std::string const &) = ::hal_export_scene_nodes;
+  hal_export_scene_nodes$(scene, out_path);
+}
 } // extern "C"

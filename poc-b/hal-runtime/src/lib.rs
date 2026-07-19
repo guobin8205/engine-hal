@@ -82,6 +82,13 @@ pub mod ffi {
         // ============ 调试 ============
         /// 返回当前注册的节点数（POC-B1 验证无泄漏用）。
         fn hal_node_registry_count() -> usize;
+
+        // ============ 导出（验证用） ============
+        /// 导出 scene 下所有直接子节点的实际坐标/尺寸到 JSON 文件。
+        /// 每个 child 用 getTag() 反查 handle，输出 {handle, x, y, w, h}。
+        /// 和 Rust 侧的 cocos_export_expected.json 用 handle 关联，
+        /// 供 hal-verify 工具对比验证翻译层 + cxx 桥接。
+        fn hal_export_scene_nodes(scene: u64, out_path: &CxxString);
     }
 }
 

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/hal-poc", "crates/hal-layout", "poc-b/hal-runtime"]
+members = ["crates/hal-poc", "crates/hal-layout", "poc-b/hal-runtime", "poc-b/hal-verify"]
 resolver = "2"
 
 [workspace.package]

@@ -7,7 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::anchor::{compute_rect, AnchorsPreset, ComputedRect, Offsets};
+use crate::anchor::{compute_rect, AnchorsPreset, Offsets};
 
 /// grow_direction（Godot Control 的扩展方向）
 #[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]

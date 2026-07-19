@@ -8,6 +8,8 @@ description = "Engine-HAL POC-B: Rust runtime that drives Cocos2d-x via cxx brid
 [dependencies]
 cxx = "1.0"
 glam = "0.33"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 hal-poc = { path = "../../crates/hal-poc" }
 hal-layout = { path = "../../crates/hal-layout" }
 

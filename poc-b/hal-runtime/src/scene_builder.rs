@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use cxx::let_cxx_string;
 
 use hal_layout::converter::build_layout_tree;
-use hal_layout::layout_tree::Size;
+use hal_layout::layout_tree::{FlatNode, Size};
 use hal_poc::{parse_scene, SceneData, SceneNode, Variant};
 
 use crate::ffi;
@@ -19,6 +19,11 @@ use crate::ffi;
 /// 窗口尺寸（和 AppDelegate 的 designResolutionSize 一致）
 const WINDOW_WIDTH: f32 = 960.0;
 const WINDOW_HEIGHT: f32 = 640.0;
+
+/// 导出文件的固定文件名（写到 exe 工作目录，供 hal-verify 对比工具读取）。
+/// expected 由 Rust 侧写入（含 path + handle + Godot/Cocos 双坐标），
+/// actual 由 C++ 侧写入（含 handle + Cocos 实际坐标），用 handle 关联。
+const EXPECTED_EXPORT_PATH: &str = "cocos_export_expected.json";
 
 /// 解析 .tscn 文件并在 Cocos 窗口里显示。
 ///
@@ -59,20 +64,23 @@ pub fn build_scene_from_tscn(tscn_path: &str) -> Result<u64, BuildError> {
 ///
 /// Phase 1 流程：
 /// 1. 用 hal-layout 算每个节点的最终 position+size（重算布局）
-/// 2. 创建 Cocos 节点（Sprite/Label）
-/// 3. 用算好的 position 设置节点位置（翻译层）
+/// 2. 创建 Cocos 节点（Sprite/Label/ColorRect 占位）
+/// 3. 用算好的 position 设置节点位置（翻译层，含 Y 轴翻转）
+///
+/// 关键：用**节点完整路径**（如 "ControlGallery/MainPanel/HSplitContainer"）做 key，
+/// 而不是节点名 —— control_gallery 有大量同名节点（Label/Title/Button），
+/// 用 name 会冲突丢节点。
 pub fn build_scene_from_data(scene: &SceneData) -> u64 {
     let cocos_scene = ffi::hal_scene_create();
+    let root_name = scene.nodes.first().map(|n| n.name.as_str()).unwrap_or("");
 
-    // 0. 用 hal-layout 算布局
+    // 0. 用 hal-layout 算布局，按 path 索引（和 FlatNode.path 对齐）
     let window_size = Size::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     let layout_tree = build_layout_tree(scene, window_size);
-    let mut layout_positions: HashMap<String, (f32, f32)> = HashMap::new();
-    let mut layout_sizes: HashMap<String, (f32, f32)> = HashMap::new();
+    let mut layout_by_path: HashMap<String, FlatNode> = HashMap::new();
     if let Some(ref tree) = layout_tree {
         for flat in tree.flatten() {
-            layout_positions.insert(flat.name.clone(), flat.position);
-            layout_sizes.insert(flat.name.clone(), (flat.size.width, flat.size.height));
+            layout_by_path.insert(flat.path.clone(), flat);
         }
     }
 
@@ -83,73 +91,123 @@ pub fn build_scene_from_data(scene: &SceneData) -> u64 {
         .map(|er| (er.id.as_str(), er.path.as_str()))
         .collect();
 
-    // 2. 节点名 → u64 句柄
-    let mut handles: HashMap<String, u64> = HashMap::new();
+    // 2. 创建所有节点，记录 ColorRect 占位符的 handle→path（供导出验证用）。
+    // 只导出 ColorRect：Sprite/Label 走真 Cocos 渲染，size 由字体/纹理决定，
+    // 和 hal-layout 算的不一致，不参与翻译层对比。
+    let mut color_rect_handles: HashMap<u64, String> = HashMap::new();
+    let mut ordered: Vec<u64> = Vec::new();
 
-    // 3. 创建所有节点
     for node in &scene.nodes {
-        if let Some(handle) = create_node(node, &ext_resources, &layout_positions, &layout_sizes) {
-            handles.insert(node.name.clone(), handle);
-        }
-    }
-
-    // 4. 根据 parent 字段建立父子关系
-    // 注意：ColorRect 的 position 是全局坐标（hal-layout 算的），
-    // 所以所有 ColorRect 直接加到 scene 根下（不用嵌套，避免双重偏移）
-    // Sprite/Label 保留原来的父子关系（它们的 position 是相对父节点的）
-    let mut name_to_handle: HashMap<String, u64> = HashMap::new();
-    let mut ordered_handles: Vec<(String, u64, bool)> = Vec::new(); // (name, handle, is_color_rect)
-    for node in &scene.nodes {
-        if let Some(&h) = handles.get(&node.name) {
-            // 只记第一个同名节点（后续同名跳过）
-            if !name_to_handle.contains_key(&node.name) {
-                name_to_handle.insert(node.name.clone(), h);
+        let path = scene_node_full_path(node, root_name);
+        let layout = layout_by_path.get(&path);
+        if let Some(handle) = create_node(node, &path, &ext_resources, layout) {
+            if handle != 0 {
                 let ty = node.r#type.as_deref().unwrap_or("");
                 let is_color_rect = !(ty == "Sprite" || ty == "Sprite2D" || ty == "Label");
-                ordered_handles.push((node.name.clone(), h, is_color_rect));
+                if is_color_rect {
+                    color_rect_handles.insert(handle, path);
+                }
+                ordered.push(handle);
             }
         }
     }
 
-    for (_, handle, is_color_rect) in &ordered_handles {
-        if *is_color_rect {
-            // ColorRect 直接加到 scene 根（全局坐标）
-            ffi::hal_node_add_child(cocos_scene, *handle);
-        } else {
-            // Sprite/Label 保留父子嵌套
-            ffi::hal_node_add_child(cocos_scene, *handle);
-        }
+    // 3. 所有节点平铺到 scene 根（全局坐标，避免嵌套双重偏移）
+    for handle in &ordered {
+        ffi::hal_node_add_child(cocos_scene, *handle);
     }
+
+    // 4. 导出 expected.json（只含 ColorRect 占位符的 path/handle/期望坐标，供 hal-verify 对比）
+    export_expected(&color_rect_handles, &layout_by_path);
 
     cocos_scene
 }
 
-/// 解析 parent 字段，返回父节点句柄。
-/// Godot parent 格式：
-///   - None 或 "." 或 "" → 场景根
-///   - "PathA" → 同级节点
-///   - "PathA/PathB" → 多级路径，取最后一段作为直接父节点名
-fn resolve_parent(
-    parent: &Option<String>,
-    handles: &HashMap<String, u64>,
-    scene_root: u64,
-) -> u64 {
-    match parent {
-        None => scene_root,
-        Some(s) if s == "." || s.is_empty() => scene_root,
-        Some(parent_path) => {
-            let parent_name = parent_path.rsplit('/').next().unwrap_or(parent_path);
-            *handles.get(parent_name).unwrap_or(&scene_root)
-        }
+/// 构造 SceneNode 的完整路径（和 hal-layout FlatNode.path 对齐，含根名前缀）。
+///
+/// FlatNode.path 从根名开始累加，如 "ControlGallery/MainPanel/HSplitContainer"。
+/// SceneNode.parent 字段对深层节点用相对根的路径（不含根名），需要补上根名前缀。
+fn scene_node_full_path(node: &SceneNode, root_name: &str) -> String {
+    match &node.parent {
+        None => node.name.clone(), // 根节点
+        Some(p) if p == "." || p.is_empty() => format!("{}/{}", root_name, node.name),
+        Some(p) => format!("{}/{}/{}", root_name, p, node.name),
     }
 }
 
+/// 导出 expected.json：每个 ColorRect 节点的 path/handle/Godot 坐标/期望 Cocos 坐标。
+///
+/// 期望 Cocos 坐标 = Y 轴翻转后的值（LayerColor anchor 在左下角）：
+///   cocos_x = godot_x
+///   cocos_y = WINDOW_HEIGHT - godot_y - height
+///
+/// 这个文件和 C++ 侧导出的 actual.json（含 handle + 实际 Cocos 坐标）配合，
+/// 用 handle 关联后由 hal-verify 工具对比，验证翻译层 + cxx 桥接是否准确。
+fn export_expected(
+    color_rect_handles: &HashMap<u64, String>,
+    layout_by_path: &HashMap<String, FlatNode>,
+) {
+    let mut entries: Vec<ExpectedEntry> = Vec::new();
+    for (&handle, path) in color_rect_handles {
+        let Some(flat) = layout_by_path.get(path) else {
+            continue;
+        };
+        let (gx, gy) = flat.position;
+        let (w, h) = (flat.size.width, flat.size.height);
+        // 翻译层公式（和 create_control_placeholder 一致）
+        let cocos_y = WINDOW_HEIGHT - gy - h;
+        entries.push(ExpectedEntry {
+            path: path.clone(),
+            handle,
+            godot_x: gx,
+            godot_y: gy,
+            w,
+            h,
+            cocos_x: gx,
+            cocos_y,
+        });
+    }
+    // 按 path 排序，输出稳定（方便 diff）
+    entries.sort_by(|a, b| a.path.cmp(&b.path));
+
+    match serde_json::to_string_pretty(&entries) {
+        Ok(json) => {
+            if let Err(e) = std::fs::write(EXPECTED_EXPORT_PATH, json) {
+                eprintln!("POC-Export: 写 {} 失败: {}", EXPECTED_EXPORT_PATH, e);
+            } else {
+                eprintln!(
+                    "POC-Export: 写 {} 成功，{} 个节点",
+                    EXPECTED_EXPORT_PATH,
+                    entries.len()
+                );
+            }
+        }
+        Err(e) => eprintln!("POC-Export: 序列化失败: {}", e),
+    }
+}
+
+/// expected.json 的一条记录（序列化格式和 hal-verify 的反序列化结构对齐）。
+#[derive(serde::Serialize)]
+struct ExpectedEntry {
+    path: String,
+    handle: u64,
+    godot_x: f32,
+    godot_y: f32,
+    w: f32,
+    h: f32,
+    cocos_x: f32,
+    cocos_y: f32,
+}
+
 /// 根据节点类型创建对应的 Cocos 节点。返回句柄（失败返回 None）。
+///
+/// `path` 是节点完整路径（含根名，和 FlatNode.path 对齐），用于查 layout。
+/// `layout` 是 hal-layout 算出的该节点布局（position+size），None 表示不在布局树里。
 fn create_node(
     node: &SceneNode,
+    path: &str,
     ext_resources: &HashMap<&str, &str>,
-    layout_map: &HashMap<String, (f32, f32)>,
-    layout_sizes: &HashMap<String, (f32, f32)>,
+    layout: Option<&FlatNode>,
 ) -> Option<u64> {
     let node_type = node.r#type.as_deref().unwrap_or("Node");
 
@@ -157,13 +215,13 @@ fn create_node(
         "Sprite" | "Sprite2D" => create_sprite_node(node, ext_resources)?,
         "Label" => create_label_node(node)?,
         // 所有 Control 类型的节点都用 ColorRect 可视化布局
-        _ => create_control_placeholder(node, layout_map, layout_sizes)?,
+        _ => create_control_placeholder(node, path, layout)?,
     };
 
     // Sprite/Label 走 apply_common_props（它们用 Godot position Y 翻转）
     // ColorRect 已经在 create_control_placeholder 里设了正确的 LayerColor 坐标
     if handle != 0 && (node_type == "Sprite" || node_type == "Sprite2D" || node_type == "Label") {
-        apply_common_props(handle, node, layout_map);
+        apply_common_props(handle, node, path, layout);
     }
 
     Some(handle)
@@ -174,10 +232,11 @@ fn create_node(
 /// 因为 LayerColor 的坐标系和 Sprite/Label 不同。
 fn create_control_placeholder(
     node: &SceneNode,
-    layout_positions: &HashMap<String, (f32, f32)>,
-    layout_sizes: &HashMap<String, (f32, f32)>,
+    _path: &str,
+    layout: Option<&FlatNode>,
 ) -> Option<u64> {
-    let &(w, h) = layout_sizes.get(&node.name)?;
+    let flat = layout?;
+    let (w, h) = (flat.size.width, flat.size.height);
     if w < 1.0 || h < 1.0 {
         return None;
     }
@@ -204,14 +263,9 @@ fn create_control_placeholder(
     // Godot: 左上角原点，Y 向下 → Cocos LayerColor: 左下角原点，Y 向上
     // LayerColor position = 左下角
     // cocos_y = WINDOW_HEIGHT - godot_y - height
-    if let Some(&(godot_x, godot_y)) = layout_positions.get(&node.name) {
-        let cocos_y = WINDOW_HEIGHT - godot_y - h;
-        ffi::hal_node_set_position(handle, godot_x, cocos_y);
-        eprintln!(
-            "POC-ColorRect: {} type={} godot=({:.0},{:.0}) size=({:.0},{:.0}) → Cocos ({:.0},{:.0})",
-            node.name, ty, godot_x, godot_y, w, h, godot_x, cocos_y
-        );
-    }
+    let (godot_x, godot_y) = flat.position;
+    let cocos_y = WINDOW_HEIGHT - godot_y - h;
+    ffi::hal_node_set_position(handle, godot_x, cocos_y);
 
     Some(handle)
 }
@@ -267,26 +321,20 @@ fn create_label_node(node: &SceneNode) -> Option<u64> {
 fn apply_common_props(
     handle: u64,
     node: &SceneNode,
-    layout_map: &HashMap<String, (f32, f32)>,
+    _path: &str,
+    layout: Option<&FlatNode>,
 ) {
     // position：优先用 hal-layout 算出的（Phase 1），fallback 到 props 里的 position
-    if let Some(&(x, y)) = layout_map.get(&node.name) {
+    if let Some(flat) = layout {
         // hal-layout 输出 Godot 坐标系（左上原点，Y 向下），转 Cocos（左下原点，Y 向上）
+        let (x, y) = flat.position;
         let cocos_y = WINDOW_HEIGHT - y;
         ffi::hal_node_set_position(handle, x, cocos_y);
-        eprintln!(
-            "POC-Pos[layout]: {} → Cocos ({:.0}, {:.0})",
-            node.name, x, cocos_y
-        );
     } else if let Some(Variant::Vector2(v)) =
         node.props.iter().find(|(k, _)| k == "position").map(|(_, v)| v)
     {
         let cocos_y = WINDOW_HEIGHT - v.y;
         ffi::hal_node_set_position(handle, v.x, cocos_y);
-        eprintln!(
-            "POC-Pos[props]: {} → Cocos ({:.0}, {:.0})",
-            node.name, v.x, cocos_y
-        );
     }
 
     // scale: Vector2(x, y)
@@ -332,6 +380,23 @@ impl std::error::Error for BuildError {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hal_poc::SceneNode;
+
+    fn mk_node(name: &str, parent: Option<&str>) -> SceneNode {
+        SceneNode {
+            name: name.into(),
+            r#type: None,
+            parent: parent.map(|s| s.to_string()),
+            index: None,
+            instance: None,
+            instance_placeholder: None,
+            owner: None,
+            unique_id: None,
+            groups: Vec::new(),
+            deferred_node_paths: Vec::new(),
+            props: Vec::new(),
+        }
+    }
 
     #[test]
     fn build_error_display() {
@@ -340,28 +405,36 @@ mod tests {
     }
 
     #[test]
-    fn resolve_parent_root() {
-        let handles = HashMap::new();
-        assert_eq!(resolve_parent(&None, &handles, 999), 999);
-        assert_eq!(resolve_parent(&Some(".".into()), &handles, 999), 999);
-        assert_eq!(resolve_parent(&Some("".into()), &handles, 999), 999);
+    fn full_path_root() {
+        // 根节点：parent=None，path = name
+        let n = mk_node("ControlGallery", None);
+        assert_eq!(scene_node_full_path(&n, "ControlGallery"), "ControlGallery");
     }
 
     #[test]
-    fn resolve_parent_named() {
-        let mut handles = HashMap::new();
-        handles.insert("Parent".into(), 42u64);
-        assert_eq!(resolve_parent(&Some("Parent".into()), &handles, 999), 42);
+    fn full_path_direct_child() {
+        // 根的直接子节点：parent="."
+        let n = mk_node("MainPanel", Some("."));
+        assert_eq!(scene_node_full_path(&n, "ControlGallery"), "ControlGallery/MainPanel");
     }
 
     #[test]
-    fn resolve_parent_multilevel() {
-        let mut handles = HashMap::new();
-        handles.insert("Direct".into(), 77u64);
-        // "PathA/Direct" 应该解析到 "Direct"
+    fn full_path_deep() {
+        // 深层节点：parent 已是相对根的路径
+        let n = mk_node("HSplitContainer", Some("MainPanel"));
         assert_eq!(
-            resolve_parent(&Some("PathA/Direct".into()), &handles, 999),
-            77
+            scene_node_full_path(&n, "ControlGallery"),
+            "ControlGallery/MainPanel/HSplitContainer"
+        );
+    }
+
+    #[test]
+    fn full_path_deeper() {
+        // 更深层：parent 含多级路径
+        let n = mk_node("BasicControls", Some("MainPanel/HSplitContainer"));
+        assert_eq!(
+            scene_node_full_path(&n, "ControlGallery"),
+            "ControlGallery/MainPanel/HSplitContainer/BasicControls"
         );
     }
 }

@@ -30,5 +30,10 @@ std::uint64_t hal_sprite_create(const std::string& texture_path);
 std::uint64_t hal_label_create(const std::string& text, const std::string& font_path, float size);
 std::uint64_t hal_color_rect_create(float width, float height, HalColor color);
 
+// ============ 导出（验证用） ============
+// 导出 scene 下所有直接子节点的实际坐标/尺寸到 JSON 文件。
+// 和 Rust 侧的 cocos_export_expected.json 用 handle 关联，供 hal-verify 对比。
+void hal_export_scene_nodes(std::uint64_t scene_handle, const std::string& out_path);
+
 // ============ 调试 ============
 std::size_t hal_node_registry_count();

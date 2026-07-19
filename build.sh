@@ -2,8 +2,9 @@
 # POC-B 统一构建脚本
 #
 # 用法：
-#   ./build.sh         完整构建（Rust + C++）
-#   ./build.sh run     构建并运行
+#   ./build.sh            完整构建（Rust + C++）
+#   ./build.sh run        构建并运行（打开 Cocos 窗口）
+#   ./build.sh verify     构建 + 验证（HAL_VERIFY 模式跑 exe，自动对比坐标）
 #
 # 约定：Cocos demo 只用 build/ 一个目录（不再 build2/build3/...）
 
@@ -12,6 +13,7 @@ set -e
 ENGINE_HAL_ROOT="$(cd "$(dirname "$0")" && pwd)"
 COCOS_DEMO="$ENGINE_HAL_ROOT/poc-b/cocos-demo"
 HAL_RUNTIME="$ENGINE_HAL_ROOT/poc-b/hal-runtime"
+GOLDEN_JSON="$ENGINE_HAL_ROOT/crates/hal-layout/tests/golden/gallery_golden.json"
 COCOS2DX_ROOT="E:/repos/cocos/cocos2d-x-3.17.2"
 CMAKE="C:/Program Files/Microsoft Visual Studio/2022/Professional/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe"
 
@@ -62,4 +64,21 @@ if [ "$1" = "run" ]; then
     echo "=== 运行 ==="
     cd "$EXE_DIR"
     ./hal_cocos_demo.exe
+fi
+
+if [ "$1" = "verify" ]; then
+    echo ""
+    echo "=== 构建 hal-verify 工具（64位 native）==="
+    cd "$ENGINE_HAL_ROOT"
+    cargo build -p hal-verify --release
+    cp "$ENGINE_HAL_ROOT/target/release/hal-verify.exe" "$EXE_DIR/"
+
+    echo ""
+    echo "=== 运行 Cocos demo（HAL_VERIFY 模式，自动退出）==="
+    cd "$EXE_DIR"
+    HAL_VERIFY=1 ./hal_cocos_demo.exe
+
+    echo ""
+    echo "=== 运行 hal-verify 对比 ==="
+    ./hal-verify.exe
 fi

@@ -11,6 +11,7 @@
 #include "cocos2d.h"
 
 #include <cstddef>
+#include <cstdlib>
 #include <string>
 #include <cstring>
 
@@ -24,9 +25,10 @@ extern "C" {
     unsigned long long hal_runtime_run_tscn_scene(const char* path, size_t len);
 }
 
-// hal_node_registry_count 是 cxx bridge 的 extern "C++" 函数（C++ linkage），
-// 由 hal_bridge_generated.cc 定义，不需要 extern "C"
+// hal_node_registry_count / hal_export_scene_nodes 是 cxx bridge 的 extern "C++" 函数
+// （C++ linkage），由 hal_bridge_generated.cc 定义，不需要 extern "C"
 size_t hal_node_registry_count();
+void hal_export_scene_nodes(unsigned long long scene, const std::string& out_path);
 
 static cocos2d::Size designResolutionSize = cocos2d::Size(960, 640);
 
@@ -80,6 +82,19 @@ bool AppDelegate::applicationDidFinishLaunching() {
 
     // 打印注册的节点数（验证 facade 真的创建了节点）
     cocos2d::log("POC-B2: 当前注册节点数 = %zu", hal_node_registry_count());
+
+    // 验证模式（HAL_VERIFY=1）：导出 Cocos 实际节点坐标，供 hal-verify 对比工具读取。
+    // Rust 侧已经导出 cocos_export_expected.json（含 path + 期望 Cocos 坐标），
+    // 这里导出 cocos_export_actual.json（含 handle + 实际 Cocos 坐标），用 handle 关联。
+    const char* verify_env = std::getenv("HAL_VERIFY");
+    if (verify_env != nullptr && verify_env[0] == '1' && result != 0) {
+        cocos2d::log("HAL_VERIFY: 导出实际节点坐标到 cocos_export_actual.json");
+        hal_export_scene_nodes(result, "cocos_export_actual.json");
+        // 导出后立即退出，不进入渲染循环（支持 CI 自动化）
+        cocos2d::log("HAL_VERIFY: 导出完成，退出程序");
+        Director::getInstance()->end();
+        return true;
+    }
 
     return true;
 }
